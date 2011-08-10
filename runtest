@@ -30,7 +30,7 @@ sed -e "s,os_process_limit = 50,os_process_limit = 0,g" /opt/couchbase/etc/couch
   sed -e "s,;socket_options,socket_options,g" > /opt/couchbase/etc/couchdb/default.ini
 
 /etc/init.d/couchbase-server start
-sleep 5
+sleep 5 $4
 
 /opt/couchbase/bin/membase cluster-init -c 127.0.0.1 \
   --cluster-init-username=Administrator \
@@ -40,7 +40,7 @@ sleep 5
   -u Administrator -p password \
   --bucket=default --bucket-type=membase --bucket-password= \
   --bucket-ramsize=31153 --bucket-replica=0
-sleep 5
+sleep 5 $4
 
 curl -vX PUT http://127.0.0.1:5984/default/_design/rampup -d @rampup.json
 
