@@ -2,7 +2,7 @@
 
 set -e
 
-echo "usage : runtest couchbase*.rpm NUM_ITEMS MEMBASE_NUM_VBUCKETS"
+echo "usage : runtest couchbase*.rpm NUM_ITEMS MEMBASE_NUM_VBUCKETS [EXTRA_SLEEP]"
 echo "      : runtest $1 $2 $3"
 
 mkdir -p out
@@ -17,7 +17,7 @@ killall -9 memcached || true
 rpm -e couchbase-server || true
 rm -rf /opt/couchbase/
 rpm -i $1
-sleep 10
+sleep 5 $4
 
 /etc/init.d/couchbase-server stop
 
