@@ -86,7 +86,7 @@ date +%Y%m%d-%H%M%S >> out/runtest.curr
 
 top -u couchbase | egrep beam.smp > out/top.out &
 
-./rampup-view.rb 127.0.0.1 $2 >> out/runtest.curr
+./rampup-view.rb 127.0.0.1 10000 >> out/runtest.curr
 
 killall top
 tail -n 50 out/top.out | head -n 10 >> out/runtest.curr
