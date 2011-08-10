@@ -1,0 +1,11 @@
+#!/usr/bin/env ruby
+
+pkg          = ARGV[0] # Ex: "../couchbase-server-community_x86_64_2.0.0r-289-gc0dbb43.rpm"
+max_vbuckets = (ARGV[1] || "128").to_i
+num_items    = (ARGV[2] || "1000000").to_i
+
+i = 1
+while i <= max_vbuckets
+  `./runtest #{pkg} #{num_items} #{i}`
+  i = i * 2
+end
