@@ -1,6 +1,14 @@
 #!/bin/sh
 
-echo usage: reset.sh couchbase*.rpm MEMBASE_NUM_VBUCKETS
+echo "usage : runtest couchbase*.rpm NUM_ITEMS MEMBASE_NUM_VBUCKETS"
+echo "      : runtest $1 $2 $3"
+
+mkdir -p out
+touch out/runtest.prev
+touch out/runtest.curr
+cat out/runtest.curr >> out/runtest.prev
+rm -f out/runtest.curr
+touch out/runtest.curr
 
 killall -9 memcached || true
 
@@ -10,23 +18,45 @@ rpm -i $1
 sleep 5
 
 /etc/init.d/couchbase-server stop
-cp membase-server.num_vbuckets-$2 /opt/couchbase/bin/membase-server
+
+cp membase-server.num_vbuckets-$3 /opt/couchbase/bin/membase-server
 
 cp /opt/couchbase/etc/couchdb/default.ini /opt/couchbase/etc/couchdb/default.ini.orig
 
 sed -e "s,os_process_limit = 50,os_process_limit = 0,g" /opt/couchbase/etc/couchdb/default.ini.orig | \
   sed -e "s,;socket_options,socket_options,g" > /opt/couchbase/etc/couchdb/default.ini
 
-cp default.ini /opt/couchbase/etc/couchdb
 /etc/init.d/couchbase-server start
 sleep 5
 
-/opt/couchbase/bin/membase cluster-init -c 127.0.0.1 --cluster-init-username=Administrator --cluster-init-password=password
+/opt/couchbase/bin/membase cluster-init -c 127.0.0.1 \
+  --cluster-init-username=Administrator \
+  --cluster-init-password=password
 
-/opt/couchbase/bin/membase bucket-create -c 127.0.0.1 -u Administrator -p password --bucket=default --bucket-type=membase --bucket-password= --bucket-ramsize=31153 --bucket-replica=0
+/opt/couchbase/bin/membase bucket-create -c 127.0.0.1 \
+  -u Administrator -p password \
+  --bucket=default --bucket-type=membase --bucket-password= \
+  --bucket-ramsize=31153 --bucket-replica=0
 sleep 5
 
-curl -vX PUT http://10.2.1.15:5984/default/_design/rampup -d @rampup.json
+curl -vX PUT http://127.0.0.1:5984/default/_design/rampup -d @rampup.json
 
-DRIVE_HOST=127.0.0.1 MAX_CREATES=1000000 RATIO_SETS=1.0 RATIO_CREATES=1.0 /opt/couchbase/bin/erl -pa . /opt/couchbase/lib/ns_server/erlang/lib/ns_server-1.7.1_*/ebin -eval 'rampup:drive_test().'
+DRIVE_HOST=127.0.0.1 MAX_CREATES=$2 RATIO_SETS=1.0 RATIO_CREATES=1.0 EXIT_AFTER_CREATES=1 \
+  /opt/couchbase/bin/erl -pa . /opt/couchbase/lib/ns_server/erlang/lib/ns_server-*/ebin \
+  -eval 'rampup:drive_test(), init:stop().'
 
+exit 0
+
+DRIVE_HOST=127.0.0.1 MAX_CREATES=$2 MAX_OPS=$2 \
+  /opt/couchbase/bin/erl -pa . /opt/couchbase/lib/ns_server/erlang/lib/ns_server-*/ebin \
+  -eval 'rampup:drive_test(), init:stop().'
+
+exit 0
+
+echo "================" >> out/runtest.curr
+echo "view build:" >> out/runtest.curr
+/usr/bin/time -a -o out/runtest.curr curl "http://127.0.0.1:5984/default/_design/rampup/_view/random?limit=10&"
+
+echo "================" >> out/runtest.curr
+echo "view access:" >> out/runtest.curr
+./rampup-view.rb 127.0.0.1 10000 >> out/runtest.curr
