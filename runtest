@@ -49,7 +49,7 @@ date +%Y%m%d-%H%M%S >> out/runtest-$2-$3
 
 top -u couchbase | egrep beam.smp > /tmp/top.out &
 
-DRIVE_HOST=127.0.0.1 MAX_CREATES=$2 RATIO_SETS=1.0 RATIO_CREATES=1.0 EXIT_AFTER_CREATES=1 \
+DRIVE_HOST=127.0.0.1 RATIO_SETS=1.0 RATIO_CREATES=1.0 MAX_CREATES=$2 EXIT_AFTER_CREATES=1 \
   /opt/couchbase/bin/erl -pa . /opt/couchbase/lib/ns_server/erlang/lib/ns_server-*/ebin \
   -eval 'rampup:drive_test(), init:stop().'
 
@@ -61,7 +61,7 @@ date +%Y%m%d-%H%M%S >> out/runtest-$2-$3
 
 top -u couchbase | egrep beam.smp > /tmp/top.out &
 
-DRIVE_HOST=127.0.0.1 MAX_CREATES=$2 MAX_OPS=$2 \
+DRIVE_HOST=127.0.0.1 RATIO_SETS=0.0 MAX_OPS=10000 \
   /opt/couchbase/bin/erl -pa . /opt/couchbase/lib/ns_server/erlang/lib/ns_server-*/ebin \
   -eval 'rampup:drive_test(), init:stop().'
 
