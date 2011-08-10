@@ -1,0 +1,26 @@
+#!/bin/sh
+
+echo usage: reset.sh couchbase*.rpm MEMBASE_NUM_VBUCKETS
+
+killall -9 memcached || true
+
+rpm -e couchbase-server
+rm -rf /opt/couchbase/
+rpm -i $1
+sleep 5
+
+/etc/init.d/couchbase-server stop
+cp membase-server.num_vbuckets-$2 /opt/couchbase/bin/membase-server
+cp default.ini /opt/couchbase/etc/couchdb
+/etc/init.d/couchbase-server start
+sleep 5
+
+/opt/couchbase/bin/membase cluster-init -c 127.0.0.1 --cluster-init-username=Administrator --cluster-init-password=password
+
+/opt/couchbase/bin/membase bucket-create -c 127.0.0.1 -u Administrator -p password --bucket=default --bucket-type=membase --bucket-password= --bucket-ramsize=31153 --bucket-replica=0
+sleep 5
+
+curl -vX PUT http://10.2.1.15:5984/default/_design/rampup -d @rampup.json
+
+DRIVE_HOST=127.0.0.1 MAX_CREATES=1000000 RATIO_SETS=1.0 RATIO_CREATES=1.0 /opt/couchbase/bin/erl -pa . /opt/couchbase/lib/ns_server/erlang/lib/ns_server-1.7.1_*/ebin -eval 'rampup:drive_test().'
+
