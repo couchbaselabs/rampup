@@ -21,8 +21,6 @@ sleep 5
 
 /etc/init.d/couchbase-server stop
 
-cp membase-server.num_vbuckets-$3 /opt/couchbase/bin/membase-server
-
 cp /opt/couchbase/etc/couchdb/default.ini /opt/couchbase/etc/couchdb/default.ini.orig
 
 sed -e "s,@@MEMBASE_NUM_VBUCKETS@@,$3,g" membase-server.num_vbuckets > \
