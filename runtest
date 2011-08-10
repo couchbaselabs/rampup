@@ -6,10 +6,9 @@ echo "usage : runtest couchbase*.rpm NUM_ITEMS MEMBASE_NUM_VBUCKETS"
 echo "      : runtest $1 $2 $3"
 
 mkdir -p out
-touch out/runtest.curr
-cat out/runtest.curr >> out/runtest.prev
-echo "# start - runtest $1 $2 $3" > out/runtest.curr
-date +%Y%m%d-%H%M%S >> out/runtest.curr
+
+echo "# start - runtest $1 $2 $3" > out/runtest-$2-$3
+date +%Y%m%d-%H%M%S >> out/runtest-$2-$3
 
 killall -9 memcached || true
 
@@ -47,8 +46,8 @@ sleep 5
 
 curl -vX PUT http://127.0.0.1:5984/default/_design/rampup -d @rampup.json
 
-echo "# loading membase..." >> out/runtest.curr
-date +%Y%m%d-%H%M%S >> out/runtest.curr
+echo "# loading membase..." >> out/runtest-$2-$3
+date +%Y%m%d-%H%M%S >> out/runtest-$2-$3
 
 top -u couchbase | egrep beam.smp > out/top.out &
 
@@ -57,10 +56,10 @@ DRIVE_HOST=127.0.0.1 MAX_CREATES=$2 RATIO_SETS=1.0 RATIO_CREATES=1.0 EXIT_AFTER_
   -eval 'rampup:drive_test(), init:stop().'
 
 killall top
-tail -n 50 out/top.out | head -n 10 >> out/runtest.curr
+tail -n 50 out/top.out | head -n 10 >> out/runtest-$2-$3
 
-echo "# using membase..." >> out/runtest.curr
-date +%Y%m%d-%H%M%S >> out/runtest.curr
+echo "# using membase..." >> out/runtest-$2-$3
+date +%Y%m%d-%H%M%S >> out/runtest-$2-$3
 
 top -u couchbase | egrep beam.smp > out/top.out &
 
@@ -69,27 +68,27 @@ DRIVE_HOST=127.0.0.1 MAX_CREATES=$2 MAX_OPS=$2 \
   -eval 'rampup:drive_test(), init:stop().'
 
 killall top
-tail -n 50 out/top.out | head -n 10 >> out/runtest.curr
+tail -n 50 out/top.out | head -n 10 >> out/runtest-$2-$3
 
-echo "# view building..." >> out/runtest.curr
-date +%Y%m%d-%H%M%S >> out/runtest.curr
-
-top -u couchbase | egrep beam.smp > out/top.out &
-
-/usr/bin/time -a -o out/runtest.curr curl "http://127.0.0.1:5984/default/_design/rampup/_view/random?limit=10&"
-
-killall top
-tail -n 50 out/top.out | head -n 10 >> out/runtest.curr
-
-echo "# view accessing..." >> out/runtest.curr
-date +%Y%m%d-%H%M%S >> out/runtest.curr
+echo "# view building..." >> out/runtest-$2-$3
+date +%Y%m%d-%H%M%S >> out/runtest-$2-$3
 
 top -u couchbase | egrep beam.smp > out/top.out &
 
-./rampup-view.rb 127.0.0.1 10000 >> out/runtest.curr
+/usr/bin/time -a -o out/runtest-$2-$3 curl "http://127.0.0.1:5984/default/_design/rampup/_view/random?limit=10&"
 
 killall top
-tail -n 50 out/top.out | head -n 10 >> out/runtest.curr
+tail -n 50 out/top.out | head -n 10 >> out/runtest-$2-$3
 
-echo "# done - runtest $1 $2 $3" >> out/runtest.curr
-date +%Y%m%d-%H%M%S >> out/runtest.curr
+echo "# view accessing..." >> out/runtest-$2-$3
+date +%Y%m%d-%H%M%S >> out/runtest-$2-$3
+
+top -u couchbase | egrep beam.smp > out/top.out &
+
+./rampup-view.rb 127.0.0.1 10000 >> out/runtest-$2-$3
+
+killall top
+tail -n 50 out/top.out | head -n 10 >> out/runtest-$2-$3
+
+echo "# done - runtest $1 $2 $3" >> out/runtest-$2-$3
+date +%Y%m%d-%H%M%S >> out/runtest-$2-$3
