@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-MEMBASE_NUM_VBUCKETS=128
+MEMBASE_NUM_VBUCKETS=@@MEMBASE_NUM_VBUCKETS@@
 export MEMBASE_NUM_VBUCKETS
 
 PATH="/opt/couchbase/bin":$PATH

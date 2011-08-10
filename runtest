@@ -8,7 +8,8 @@ touch out/runtest.prev
 touch out/runtest.curr
 cat out/runtest.curr >> out/runtest.prev
 rm -f out/runtest.curr
-touch out/runtest.curr
+echo "# runtest $1 $2 $3" >> out/runtest.curr
+date >> out/runtest.curr
 
 killall -9 memcached || true
 
@@ -22,6 +23,9 @@ sleep 5
 cp membase-server.num_vbuckets-$3 /opt/couchbase/bin/membase-server
 
 cp /opt/couchbase/etc/couchdb/default.ini /opt/couchbase/etc/couchdb/default.ini.orig
+
+sed -e "s,@@MEMBASE_NUM_VBUCKETS@@,$3,g" membase-server.num_vbuckets > \
+  /opt/couchbase/bin/membase-server
 
 sed -e "s,os_process_limit = 50,os_process_limit = 0,g" /opt/couchbase/etc/couchdb/default.ini.orig | \
   sed -e "s,;socket_options,socket_options,g" > /opt/couchbase/etc/couchdb/default.ini
@@ -45,18 +49,16 @@ DRIVE_HOST=127.0.0.1 MAX_CREATES=$2 RATIO_SETS=1.0 RATIO_CREATES=1.0 EXIT_AFTER_
   /opt/couchbase/bin/erl -pa . /opt/couchbase/lib/ns_server/erlang/lib/ns_server-*/ebin \
   -eval 'rampup:drive_test(), init:stop().'
 
-exit 0
-
 DRIVE_HOST=127.0.0.1 MAX_CREATES=$2 MAX_OPS=$2 \
   /opt/couchbase/bin/erl -pa . /opt/couchbase/lib/ns_server/erlang/lib/ns_server-*/ebin \
   -eval 'rampup:drive_test(), init:stop().'
 
 exit 0
 
-echo "================" >> out/runtest.curr
-echo "view build:" >> out/runtest.curr
+echo "# ================" >> out/runtest.curr
+echo "# view build:" >> out/runtest.curr
 /usr/bin/time -a -o out/runtest.curr curl "http://127.0.0.1:5984/default/_design/rampup/_view/random?limit=10&"
 
-echo "================" >> out/runtest.curr
-echo "view access:" >> out/runtest.curr
+echo "# ================" >> out/runtest.curr
+echo "# view access:" >> out/runtest.curr
 ./rampup-view.rb 127.0.0.1 10000 >> out/runtest.curr
