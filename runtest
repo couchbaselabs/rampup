@@ -39,7 +39,7 @@ sleep 5 $4
 /opt/couchbase/bin/membase bucket-create -c 127.0.0.1 \
   -u Administrator -p password \
   --bucket=default --bucket-type=membase --bucket-password= \
-  --bucket-ramsize=31153 --bucket-replica=0
+  --bucket-ramsize=6440 --bucket-replica=0
 sleep 5 $4
 
 curl -vX PUT http://127.0.0.1:5984/default/_design/rampup -d @rampup.json
