@@ -38,22 +38,28 @@ def test_name(pkg, num_items, nodes, vbuckets, opts)
 end
 
 
-def prepare_cluster(pkg, num_items, nodes, vbuckets, opts)
+def prepare_cluster(pkg_in, num_items, nodes, vbuckets, opts)
   return nil if nodes <= 1
 
   # Prepare an AWS EC2 CloudFormation cluster (or a stack) with nodes number of nodes.
   #
+  pkg      = pkg_in
   pkg      = pkg.split('/')[-1] # Ex: 'couchbase-server-community_x86_64_2.0.0r-289-gc0dbb43.rpm'
   pkg_base = pkg.split('-')[0]  # Ex: 'couchbase'
+  pkg_url  = "#{opts['PackageURLBase']}/#{pkg}"
 
-  stack    = test_name(pkg, num_items, nodes, vbuckets, opts).join('_')
+  unless File.exists?(pkg_in)
+    `wget -O #{pkg_in} #{pkg_url}`
+  end
+
+  stack    = test_name(pkg_in, num_items, nodes, vbuckets, opts).join('_')
   template = "#{nodes}-pack-#{pkg_base}" # Ex: '1-pack-couchbase'
 
   `rm -f #{template}`
   `wget https://raw.github.com/couchbaselabs/cloud-formation/master/packs/#{pkg_base}-#{opts['version']}-64bit/#{template}`
 
   parameters =
-    "PackageURL=#{PackageURLBase}/#{pkg};" +
+    "PackageURL=#{pkg_url};" +
     "RESTPassword=password;" +
     "RAMForDefaultBucket=#{opts['RAMForDefaultBucket']};" +
     "UserTag=none;" +
