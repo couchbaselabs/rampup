@@ -2,13 +2,13 @@
 
 set -e
 
-echo "usage : runtest couchbase*.rpm NUM_ITEMS MEMBASE_NUM_VBUCKETS [JOIN_URL] [EXTRA_SLEEP]"
-echo "      : runtest $1 $2 $3 $4 $5"
+echo "usage : runtest TEST_NAME couchbase*.rpm NUM_ITEMS MEMBASE_NUM_VBUCKETS [JOIN_URL] [EXTRA_SLEEP]"
+echo "      : runtest $1 $2 $3 $4 $5 $6"
 
 mkdir -p out
 
-echo "# start - runtest $1 $2 $3 $4 $5" > out/runtest-$2-$3
-date +%Y%m%d-%H%M%S >> out/runtest-$2-$3
+echo "# start - runtest $1" > out/$1
+date +%Y%m%d-%H%M%S >> out/$1
 
 killall -9 memcached || true
 
@@ -16,24 +16,24 @@ killall -9 memcached || true
 
 rpm -e couchbase-server || true
 rm -rf /opt/couchbase/
-rpm -i $1
-sleep 5 $5
+rpm -i $2
+sleep 5 $6
 
 /etc/init.d/couchbase-server stop
 
 cp /opt/couchbase/etc/couchdb/default.ini /opt/couchbase/etc/couchdb/default.ini.orig
 
-sed -e "s,@@MEMBASE_NUM_VBUCKETS@@,$3,g" membase-server.num_vbuckets > \
+sed -e "s,@@MEMBASE_NUM_VBUCKETS@@,$4,g" membase-server.num_vbuckets > \
   /opt/couchbase/bin/membase-server
 
 sed -e "s,os_process_limit = 50,os_process_limit = 0,g" /opt/couchbase/etc/couchdb/default.ini.orig | \
   sed -e "s,;socket_options,socket_options,g" > /opt/couchbase/etc/couchdb/default.ini
 
 /etc/init.d/couchbase-server start
-sleep 5 $5
+sleep 5 $6
 
-if test "$4" != ""; then
-  /opt/couchbase/bin/membase rebalance -c $4 \
+if test "$5" != ""; then
+  /opt/couchbase/bin/membase rebalance -c $5 \
     -u Administrator -p password \
     --server-add=`/sbin/ifconfig eth0|grep inet|awk {'print $2'}|cut -d":" -f2|head -n 1`
 else
@@ -45,24 +45,24 @@ else
     --bucket=default --bucket-type=membase --bucket-password= \
     --bucket-ramsize=6440 --bucket-replica=0
 fi
-sleep 5 $5
+sleep 5 $6
 
 curl -vX PUT http://127.0.0.1:5984/default/_design/rampup -d @rampup.json
 
-echo "# loading membase..." >> out/runtest-$2-$3
-date +%Y%m%d-%H%M%S >> out/runtest-$2-$3
+echo "# loading membase..." >> out/$1
+date +%Y%m%d-%H%M%S >> out/$1
 
 top -u couchbase | egrep beam.smp > /tmp/top.out &
 
-DRIVE_HOST=127.0.0.1 RATIO_SETS=1.0 RATIO_CREATES=1.0 MAX_CREATES=$2 EXIT_AFTER_CREATES=1 \
+DRIVE_HOST=127.0.0.1 RATIO_SETS=1.0 RATIO_CREATES=1.0 MAX_CREATES=$3 EXIT_AFTER_CREATES=1 \
   /opt/couchbase/bin/erl -pa . /opt/couchbase/lib/ns_server/erlang/lib/ns_server-*/ebin \
   -eval 'rampup:drive_test(), init:stop().'
 
 killall top
-tail -n 50 /tmp/top.out | head -n 10 >> out/runtest-$2-$3
+tail -n 50 /tmp/top.out | head -n 10 >> out/$1
 
-echo "# using membase..." >> out/runtest-$2-$3
-date +%Y%m%d-%H%M%S >> out/runtest-$2-$3
+echo "# using membase..." >> out/$1
+date +%Y%m%d-%H%M%S >> out/$1
 
 top -u couchbase | egrep beam.smp > /tmp/top.out &
 
@@ -71,27 +71,27 @@ DRIVE_HOST=127.0.0.1 RATIO_SETS=0.0 MAX_OPS=10000 \
   -eval 'rampup:drive_test(), init:stop().'
 
 killall top
-tail -n 50 /tmp/top.out | head -n 10 >> out/runtest-$2-$3
+tail -n 50 /tmp/top.out | head -n 10 >> out/$1
 
-echo "# view building..." >> out/runtest-$2-$3
-date +%Y%m%d-%H%M%S >> out/runtest-$2-$3
-
-top -u couchbase | egrep beam.smp > /tmp/top.out &
-
-/usr/bin/time -a -o out/runtest-$2-$3 curl "http://127.0.0.1:5984/default/_design/rampup/_view/random?limit=10"
-
-killall top
-tail -n 50 /tmp/top.out | head -n 10 >> out/runtest-$2-$3
-
-echo "# view accessing..." >> out/runtest-$2-$3
-date +%Y%m%d-%H%M%S >> out/runtest-$2-$3
+echo "# view building..." >> out/$1
+date +%Y%m%d-%H%M%S >> out/$1
 
 top -u couchbase | egrep beam.smp > /tmp/top.out &
 
-./rampup-view.rb 127.0.0.1 10000 >> out/runtest-$2-$3
+/usr/bin/time -a -o out/$1 curl "http://127.0.0.1:5984/default/_design/rampup/_view/random?limit=10"
 
 killall top
-tail -n 50 /tmp/top.out | head -n 10 >> out/runtest-$2-$3
+tail -n 50 /tmp/top.out | head -n 10 >> out/$1
 
-echo "# done - runtest $1 $2 $3" >> out/runtest-$2-$3
-date +%Y%m%d-%H%M%S >> out/runtest-$2-$3
+echo "# view accessing..." >> out/$1
+date +%Y%m%d-%H%M%S >> out/$1
+
+top -u couchbase | egrep beam.smp > /tmp/top.out &
+
+./rampup-view.rb 127.0.0.1 10000 >> out/$1
+
+killall top
+tail -n 50 /tmp/top.out | head -n 10 >> out/$1
+
+echo "# done - runtest $1" >> out/$1
+date +%Y%m%d-%H%M%S >> out/$1

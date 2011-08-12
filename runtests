@@ -29,8 +29,12 @@ opts = {
   opts[key] = val
 }
 
-def stack_name(pkg, num_items, nodes, vbuckets, opts)
-  "test-#{$start}_#{num_items}-#{nodes}-#{vbuckets}-#{pkg}"
+def test_name(pkg, num_items, nodes, vbuckets, opts)
+  pkg = pkg.split('/')[-1]
+  # Ex: 'couchbase-server-community_x86_64_2.0.0r-289-gc0dbb43.rpm'
+  pkg = pkg.split('-')[0] + '-' + pkg.split('_')[-1].split('.')[0..-2].join('.')
+  # Ex: 'couchbase-2.0.0r-289-gc0dbb43'
+  return ["test-#{$start}_#{pkg}", "#{num_items}-#{nodes}-#{vbuckets}"]
 end
 
 
@@ -42,7 +46,7 @@ def prepare_cluster(pkg, num_items, nodes, vbuckets, opts)
   pkg      = pkg.split('/')[-1] # Ex: 'couchbase-server-community_x86_64_2.0.0r-289-gc0dbb43.rpm'
   pkg_base = pkg.split('-')[0]  # Ex: 'couchbase'
 
-  stack    = stack_name(pkg, num_items, nodes, vbuckets, opts)
+  stack    = test_name(pkg, num_items, nodes, vbuckets, opts).join('_')
   template = "#{nodes}-pack-#{pkg_base}" # Ex: '1-pack-couchbase'
 
   `rm -f #{template}`
@@ -84,8 +88,12 @@ nodes_arr.each do |nodes|
   while i <= vbucket_max
 
     num_items_arr.each do |num_items|
+      test_dir, test_file = test_name(pkg, num_items, nodes, i, opts)
+      `mkdir -p ./out/#{test_dir}`
+      test_name = "#{test_dir}/#{test_file}.out"
+      print "#{test_name} ...\n"
       cluster_url = prepare_cluster(pkg, num_items, nodes, i, opts)
-      `./runtest #{pkg} #{num_items} #{i} #{cluster_url} #{opts['extra_sleep']}`
+      `./runtest #{test_name} #{pkg} #{num_items} #{i} #{cluster_url} #{opts['extra_sleep']}`
       sleep 1
       destroy_cluster(pkg, num_items, nodes, i, opts)
     end
