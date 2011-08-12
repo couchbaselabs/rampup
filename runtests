@@ -53,7 +53,7 @@ def prepare_cluster(pkg_in, num_items, nodes, vbuckets, opts)
 
   stack    = test_name(pkg_in, num_items, nodes, vbuckets, opts)
   stack    = stack.join('-').gsub('_', '-').gsub('.', '-')
-  template = "#{nodes}-pack-#{pkg_base}" # Ex: '1-pack-couchbase'
+  template = "#{nodes - 1}-pack-#{pkg_base}" # Ex: '1-pack-couchbase'
 
   `rm -f #{template}`
   `wget https://raw.github.com/couchbaselabs/cloud-formation/master/packs/#{pkg_base}-#{opts['version']}-64bit/#{template}`
@@ -77,7 +77,7 @@ def prepare_cluster(pkg_in, num_items, nodes, vbuckets, opts)
     #  "Template", "for", "couchbase", "server", "on", "EC2", "RESTWebConsoleURL=http://50.19.133.35:8091", "2011-08-11T23:17:16Z"]
     #
     if s[2] == "CREATE_COMPLETE"
-      return s[-2].split('=')[1]
+      return s[-2].split('=')[1].split('/')[-1]
     end
 
     sleep(2)
@@ -98,8 +98,8 @@ nodes_arr.each do |nodes|
       `mkdir -p ./out/#{test_dir}`
       test_name = "#{test_dir}/#{test_file}.out"
       print "#{test_name} ...\n"
-      cluster_url = prepare_cluster(pkg, num_items, nodes, i, opts)
-      `./runtest #{test_name} #{pkg} #{num_items} #{i} #{cluster_url} #{opts['extra_sleep']}`
+      cluster_host_port = prepare_cluster(pkg, num_items, nodes, i, opts)
+      `./runtest #{test_name} #{pkg} #{num_items} #{i} #{cluster_host_port} #{opts['extra_sleep']}`
       sleep 1
       destroy_cluster(pkg, num_items, nodes, i, opts)
     end
