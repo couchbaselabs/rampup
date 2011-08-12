@@ -37,7 +37,6 @@ def test_name(pkg, num_items, nodes, vbuckets, opts)
   return ["test-#{$start}_#{pkg}", "#{num_items}-#{nodes}-#{vbuckets}"]
 end
 
-
 def prepare_cluster(pkg_in, num_items, nodes, vbuckets, opts)
   return nil if nodes <= 1
 
@@ -52,7 +51,8 @@ def prepare_cluster(pkg_in, num_items, nodes, vbuckets, opts)
     `wget -O #{pkg_in} #{pkg_url}`
   end
 
-  stack    = test_name(pkg_in, num_items, nodes, vbuckets, opts).join('_')
+  stack    = test_name(pkg_in, num_items, nodes, vbuckets, opts)
+  stack    = stack.join('-').gsub('_', '-').gsub('.', '-')
   template = "#{nodes}-pack-#{pkg_base}" # Ex: '1-pack-couchbase'
 
   `rm -f #{template}`
