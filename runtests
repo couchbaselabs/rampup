@@ -92,7 +92,7 @@ end
 def destroy_cluster(pkg, num_items, nodes, vbuckets, opts)
   return if nodes <= 1
 
-  stack = stack_name(pkg_in, num_items, nodes, vbuckets, opts)
+  stack = stack_name(pkg, num_items, nodes, vbuckets, opts)
 
   `cfn-delete-stack #{stack} --force`
 end
