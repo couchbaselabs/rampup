@@ -1,13 +1,96 @@
 #!/usr/bin/env ruby
 
-pkg          = ARGV[0] # Ex: "../couchbase-server-community_x86_64_2.0.0r-289-gc0dbb43.rpm"
-max_vbuckets = (ARGV[1] || "128").to_i
-num_items    = (ARGV[2] || "1000000").to_i
-extra_sleep  = (ARGV[3] || "0").to_i
+# example: ./runtests $package $nodes,csv $vbucket-range $num_items,csv [$key=val,csv]
+# example: ./runtests couchbase-server*.rpm 1,2,3,4 1-64 1000,100000,1000000
+# example: ./runtests couchbase-server*.rpm 1 1 100000
+#
+$start = Time.now.strftime("%Y%m%d%H%M%S")
 
-i = 1
-while i <= max_vbuckets
-  `./runtest #{pkg} #{num_items} #{i} #{extra_sleep}`
-  sleep 1
-  i = i * 2
+pkg = ARGV[0] # Ex: "../couchbase-server-community_x86_64_2.0.0r-289-gc0dbb43.rpm"
+
+nodes_arr     = (ARGV[1] || "1,2,5").split(',').map {|x| x.to_i}
+vbucket_range = (ARGV[2] || "1-64").split('-').map {|x| x.to_i}
+vbucket_min   = 1
+vbucket_min   = vbucket_range[0] if vbucket_range.length > 1
+vbucket_max   = vbucket_range[-1]
+num_items_arr = (ARGV[3] || "100000").split(',').map {|x| x.to_i}
+
+opts = {
+  'extra_sleep' => '',
+  'version' => '2.0.0',
+  'PackageURLBase' => 'http://packages.northscale.com/latestbuilds',
+  'KeyName' => 'steveyen-key',
+  'InstanceType' => 'm1.large',
+  'RAMForDefaultBucket' => '6440'
+}
+
+(ARGV[4] || "").split(',').each {|x|
+  key, val = x.split('=')
+  opts[key] = val
+}
+
+def stack_name(pkg, num_items, nodes, vbuckets, opts)
+  "test-#{$start}_#{num_items}-#{nodes}-#{vbuckets}-#{pkg}"
 end
+
+
+def prepare_cluster(pkg, num_items, nodes, vbuckets, opts)
+  return nil if nodes <= 1
+
+  # Prepare an AWS EC2 CloudFormation cluster (or a stack) with nodes number of nodes.
+  #
+  pkg      = pkg.split('/')[-1] # Ex: 'couchbase-server-community_x86_64_2.0.0r-289-gc0dbb43.rpm'
+  pkg_base = pkg.split('-')[0]  # Ex: 'couchbase'
+
+  stack    = stack_name(pkg, num_items, nodes, vbuckets, opts)
+  template = "#{nodes}-pack-#{pkg_base}" # Ex: '1-pack-couchbase'
+
+  `rm -f #{template}`
+  `wget https://raw.github.com/couchbaselabs/cloud-formation/master/packs/#{pkg_base}-#{opts['version']}-64bit/#{template}`
+
+  parameters =
+    "PackageURL=#{PackageURLBase}/#{pkg};" +
+    "RESTPassword=password;" +
+    "RAMForDefaultBucket=#{opts['RAMForDefaultBucket']};" +
+    "UserTag=none;" +
+    "ExistingClusterHostPort=host:port;" +
+    "RAMPerServer=#{opts['RAMForDefaultBucket']};" +
+    "KeyName=#{opts['KeyName']};" +
+    "InstanceType=#{opts['InstanceType']}"
+
+  `cfn-create-stack #{stack} --template-file=#{template} --parameters "#{parameters}"`
+
+  while true
+    s = `cfn-describe-stacks #{stack} --show-table`.split(' ')
+
+    # ["STACK", "vmerge-test-x", "CREATE_COMPLETE",
+    #  "Template", "for", "couchbase", "server", "on", "EC2", "RESTWebConsoleURL=http://50.19.133.35:8091", "2011-08-11T23:17:16Z"]
+    #
+    if s[2] == "CREATE_COMPLETE"
+      return s[-2].split('=')[1]
+    end
+
+    sleep(2)
+  end
+end
+
+def destroy_cluster(pkg, num_items, nodes, vbuckets, opts)
+  return if nodes <= 1
+end
+
+nodes_arr.each do |nodes|
+
+  i = vbucket_min
+  while i <= vbucket_max
+
+    num_items_arr.each do |num_items|
+      cluster_url = prepare_cluster(pkg, num_items, nodes, i, opts)
+      `./runtest #{pkg} #{num_items} #{i} #{cluster_url} #{opts['extra_sleep']}`
+      sleep 1
+      destroy_cluster(pkg, num_items, nodes, i, opts)
+    end
+
+    i = i * 2
+  end
+end
+

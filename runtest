@@ -2,12 +2,12 @@
 
 set -e
 
-echo "usage : runtest couchbase*.rpm NUM_ITEMS MEMBASE_NUM_VBUCKETS [EXTRA_SLEEP]"
-echo "      : runtest $1 $2 $3"
+echo "usage : runtest couchbase*.rpm NUM_ITEMS MEMBASE_NUM_VBUCKETS [JOIN_URL] [EXTRA_SLEEP]"
+echo "      : runtest $1 $2 $3 $4 $5"
 
 mkdir -p out
 
-echo "# start - runtest $1 $2 $3" > out/runtest-$2-$3
+echo "# start - runtest $1 $2 $3 $4 $5" > out/runtest-$2-$3
 date +%Y%m%d-%H%M%S >> out/runtest-$2-$3
 
 killall -9 memcached || true
@@ -17,7 +17,7 @@ killall -9 memcached || true
 rpm -e couchbase-server || true
 rm -rf /opt/couchbase/
 rpm -i $1
-sleep 5 $4
+sleep 5 $5
 
 /etc/init.d/couchbase-server stop
 
@@ -30,17 +30,22 @@ sed -e "s,os_process_limit = 50,os_process_limit = 0,g" /opt/couchbase/etc/couch
   sed -e "s,;socket_options,socket_options,g" > /opt/couchbase/etc/couchdb/default.ini
 
 /etc/init.d/couchbase-server start
-sleep 5 $4
+sleep 5 $5
 
-/opt/couchbase/bin/membase cluster-init -c 127.0.0.1 \
-  --cluster-init-username=Administrator \
-  --cluster-init-password=password
-
-/opt/couchbase/bin/membase bucket-create -c 127.0.0.1 \
-  -u Administrator -p password \
-  --bucket=default --bucket-type=membase --bucket-password= \
-  --bucket-ramsize=6440 --bucket-replica=0
-sleep 5 $4
+if test "$4" != ""; then
+  /opt/couchbase/bin/membase rebalance -c $4 \
+    -u Administrator -p password \
+    --server-add=`/sbin/ifconfig eth0|grep inet|awk {'print $2'}|cut -d":" -f2|head -n 1`
+else
+  /opt/couchbase/bin/membase cluster-init -c 127.0.0.1 \
+    --cluster-init-username=Administrator \
+    --cluster-init-password=password
+  /opt/couchbase/bin/membase bucket-create -c 127.0.0.1 \
+    -u Administrator -p password \
+    --bucket=default --bucket-type=membase --bucket-password= \
+    --bucket-ramsize=6440 --bucket-replica=0
+fi
+sleep 5 $5
 
 curl -vX PUT http://127.0.0.1:5984/default/_design/rampup -d @rampup.json
 
@@ -73,7 +78,7 @@ date +%Y%m%d-%H%M%S >> out/runtest-$2-$3
 
 top -u couchbase | egrep beam.smp > /tmp/top.out &
 
-/usr/bin/time -a -o out/runtest-$2-$3 curl "http://127.0.0.1:5984/default/_design/rampup/_view/random?limit=10&"
+/usr/bin/time -a -o out/runtest-$2-$3 curl "http://127.0.0.1:5984/default/_design/rampup/_view/random?limit=10"
 
 killall top
 tail -n 50 /tmp/top.out | head -n 10 >> out/runtest-$2-$3
