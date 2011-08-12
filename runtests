@@ -1,19 +1,19 @@
 #!/usr/bin/env ruby
 
-# example: ./runtests $package $nodes,csv $vbucket-range $num_items,csv [$key=val,csv]
-# example: ./runtests couchbase-server*.rpm 1,2,3,4 1-64 1000,100000,1000000
-# example: ./runtests couchbase-server*.rpm 1 1 100000
+# example: ./runtests $package $num_items,csv $nodes,csv $vbucket-range [$key=val,csv]
+# example: ./runtests couchbase-server*.rpm 1000,100000,1000000 1,2,3,4 1-64
+# example: ./runtests couchbase-server*.rpm 100000 1 1
 #
 $start = Time.now.strftime("%Y%m%d%H%M%S")
 
 pkg = ARGV[0] # Ex: "../couchbase-server-community_x86_64_2.0.0r-289-gc0dbb43.rpm"
 
-nodes_arr     = (ARGV[1] || "1,2,5").split(',').map {|x| x.to_i}
-vbucket_range = (ARGV[2] || "1-64").split('-').map {|x| x.to_i}
+num_items_arr = (ARGV[1] || "100000").split(',').map {|x| x.to_i}
+nodes_arr     = (ARGV[2] || "1,2,5").split(',').map {|x| x.to_i}
+vbucket_range = (ARGV[3] || "1-64").split('-').map {|x| x.to_i}
 vbucket_min   = 1
 vbucket_min   = vbucket_range[0] if vbucket_range.length > 1
 vbucket_max   = vbucket_range[-1]
-num_items_arr = (ARGV[3] || "100000").split(',').map {|x| x.to_i}
 
 opts = {
   'extra_sleep' => '',
