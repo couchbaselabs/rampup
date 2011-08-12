@@ -38,7 +38,7 @@ def test_name(pkg, num_items, nodes, vbuckets, opts)
 end
 
 def stack_name(pkg, num_items, nodes, vbuckets, opts)
-  stack = test_name(pkg_in, num_items, nodes, vbuckets, opts)
+  stack = test_name(pkg, num_items, nodes, vbuckets, opts)
   stack = stack.join('-').gsub('_', '-').gsub('.', '-')
   return stack
 end
