@@ -38,7 +38,7 @@ def time(cmd)
   `tail -n 50 /tmp/top.out | head -n 10 >> #{$out_file}`
 end
 
-next("starting... runtest #{test_name}")
+next("starting... runtest #{$test_name}")
 
 `killall -9 memcached || true`
 
@@ -103,4 +103,4 @@ time("/usr/bin/time -a -o #{$out_file} curl -v http://127.0.0.1:5984/default/_de
 next("view-accessing...")
 time("./rampup-view.rb 127.0.0.1 10000 >> #{$out_file}")
 
-next("done... runtest #{test_name} (#{Time.now - time_start})")
+next("done... runtest #{$test_name} (#{Time.now - time_start})")
