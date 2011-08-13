@@ -26,7 +26,7 @@ def step(mesg, cmd=nil)
   $time_curr = Time.now
 
   if $time_prev
-    `echo "# #{$mesg_prev} / elapsed: #{$time_curr - $time_prev}" >> #{$out_file}`
+    `echo "# #{$mesg_prev} done. elapsed: #{$time_curr - $time_prev}" >> #{$out_file}`
   end
 
   `echo "# #{mesg}" >> #{$out_file}`
