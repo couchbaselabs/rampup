@@ -29,8 +29,7 @@ def step(mesg, cmd=nil)
     `echo "# #{$mesg_prev} done. elapsed: #{$time_curr - $time_prev}" >> #{$out_file}`
   end
 
-  `echo "# #{mesg}" >> #{$out_file}`
-  `echo "#{$time_curr.strftime('%Y%m%d-%H%M%S')}" >> #{$out_file}`
+  `echo "# #{mesg} #{$time_curr.strftime('%Y%m%d-%H%M%S')}" >> #{$out_file}`
 
   $time_prev = $time_curr
   $mesg_prev = mesg
