@@ -22,11 +22,11 @@ $time_curr = $time_start = Time.now
 $time_prev = nil
 
 def step(msg, cmd=nil)
-  prev = curr
-  curr = Time.now
+  $prev = $curr
+  $curr = Time.now
 
   `echo "# #{msg}" >> #{$out_file}`
-  `echo "#{curr.strftime('%Y%m%d-%H%M%S')} (#{curr - prev})" >> #{$out_file}`
+  `echo "#{$curr.strftime('%Y%m%d-%H%M%S')} (#{$curr - $prev})" >> #{$out_file}`
 
    time(cmd) if cmd
 end
