@@ -73,8 +73,7 @@ def prepare_cluster(pkg_in, num_items, nodes, vbuckets, opts)
     "RAMPerServer=#{opts['stack.RAMForDefaultBucket']};" +
     "KeyName=#{opts['stack.KeyName']};" +
     "InstanceType=#{opts['stack.InstanceType']};" +
-    "AfterInstall=" +
-      "sleep 5 && wget https://raw.github.com/couchbaselabs/rampup/master/after-install && chmod a+x after-install && ./after-install #{vbuckets}"
+    "NumVBuckets=#{vbuckets}"
 
   `cfn-create-stack #{stack} --template-file=#{template} --parameters "#{parameters}"`
 
