@@ -9,7 +9,8 @@ cp /opt/couchbase/etc/couchdb/default.ini /opt/couchbase/etc/couchdb/default.ini
 
 /etc/init.d/couchbase-server stop || true
 
-wget https://raw.github.com/couchbaselabs/rampup/master/membase-server.num_vbuckets
+rm -f membase-server.num_vbuckets
+wget -O membase-server.num_vbuckets https://raw.github.com/couchbaselabs/rampup/master/membase-server.num_vbuckets
 
 sed -e "s,@@MEMBASE_NUM_VBUCKETS@@,$1,g" membase-server.num_vbuckets > \
   /opt/couchbase/bin/membase-server
