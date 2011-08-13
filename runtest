@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 
 if ARGV.length < 4
-  print("runtest TEST_NAME PKG_RPM NUM_ITEMS MEMBASE_NUM_VBUCKETS [JOIN_URL] [EXTRA_SLEEP]\n")
+  print("runtest TEST_NAME PKG_RPM NUM_ITEMS NUM_VBUCKETS [JOIN_URL] [EXTRA_SLEEP]\n")
   exit(-1)
 end
 
