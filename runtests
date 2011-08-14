@@ -1,12 +1,17 @@
 #!/usr/bin/env ruby
 
-# example: ./runtests $package $num_items,csv $nodes,csv $vbucket-range [$key=val,csv]
-# example: ./runtests couchbase-server*.rpm 1000,100000,1000000 1,2,3,4 1-64
-# example: ./runtests couchbase-server*.rpm 100000 1 1
+# example: ./runtests $package $num_items,csv $nodes,csv $vbucket-range $val-size-arr [$key=val,csv]
 #
-$start = Time.now.strftime("%Y%m%d%H%M%S")
-
 pkg = ARGV[0] # Ex: "../couchbase-server-community_x86_64_2.0.0r-289-gc0dbb43.rpm"
+
+unless pkg
+  print "usage: ./runtests $package $num_items,csv $nodes,csv $vbucket-range $val-size-arr [$key=val,csv]\n"
+  print "ex:    ./runtests couchbase-server*.rpm 1000,100000,1000000 1,2,3,4 1-64 128,1000,10000\n"
+  print "ex:    ./runtests couchbase-server*.rpm 100000 1 1 1000\n"
+  exit(-1)
+end
+
+$start = Time.now.strftime("%Y%m%d%H%M%S")
 
 num_items_arr = (ARGV[1] || "100000").split(',').map {|x| x.to_i}
 nodes_arr     = (ARGV[2] || "1,2,5").split(',').map {|x| x.to_i}
@@ -14,6 +19,7 @@ vbucket_range = (ARGV[3] || "1-64").split('-').map {|x| x.to_i}
 vbucket_min   = 1
 vbucket_min   = vbucket_range[0] if vbucket_range.length > 1
 vbucket_max   = vbucket_range[-1]
+val_size_arr  = (ARGV[4] || "1000").split(',').map {|x| x.to_i}
 
 opts = {
   'extra_sleep' => '',
@@ -25,26 +31,26 @@ opts = {
   'stack.RAMForDefaultBucket' => '6440'
 }
 
-(ARGV[4] || "").split(',').each {|x|
+(ARGV[5] || "").split(',').each {|x|
   key, val = x.split('=')
   opts[key] = val
 }
 
-def test_name(pkg, num_items, nodes, vbuckets, opts)
+def test_name(pkg, num_items, nodes, vbuckets, val_size, opts)
   pkg = pkg.split('/')[-1]
   # Ex: 'couchbase-server-community_x86_64_2.0.0r-289-gc0dbb43.rpm'
   pkg = pkg.split('-')[0] + '-' + pkg.split('_')[-1].split('.')[0..-2].join('.')
   # Ex: 'couchbase-2.0.0r-289-gc0dbb43'
-  return ["test-#{$start}_#{pkg}", "#{num_items}-#{nodes}-#{vbuckets}"]
+  return ["test-#{$start}_#{pkg}", "#{num_items}-#{nodes}-#{vbuckets}-#{val_size}"]
 end
 
-def stack_name(pkg, num_items, nodes, vbuckets, opts)
-  stack = test_name(pkg, num_items, nodes, vbuckets, opts)
+def stack_name(pkg, num_items, nodes, vbuckets, val_size, opts)
+  stack = test_name(pkg, num_items, nodes, vbuckets, val_size, opts)
   stack = stack.join('-').gsub('_', '-').gsub('.', '-')
   return stack
 end
 
-def prepare_cluster(pkg_in, num_items, nodes, vbuckets, opts)
+def prepare_cluster(pkg_in, num_items, nodes, vbuckets, val_size, opts)
   return nil if nodes <= 1
 
   # Prepare an AWS EC2 CloudFormation cluster (or a stack) with nodes number of nodes.
@@ -58,7 +64,7 @@ def prepare_cluster(pkg_in, num_items, nodes, vbuckets, opts)
     `wget -O #{pkg_in} #{pkg_url}`
   end
 
-  stack    = stack_name(pkg_in, num_items, nodes, vbuckets, opts)
+  stack    = stack_name(pkg_in, num_items, nodes, vbuckets, val_size, opts)
   template = "#{nodes - 1}-pack-#{pkg_base}" # Ex: '1-pack-couchbase'
 
   `rm -f #{template}`
@@ -91,29 +97,30 @@ def prepare_cluster(pkg_in, num_items, nodes, vbuckets, opts)
   end
 end
 
-def destroy_cluster(pkg, num_items, nodes, vbuckets, opts)
+def destroy_cluster(pkg, num_items, nodes, vbuckets, val_size, opts)
   return if nodes <= 1
   return if opts['stack.destroy'] != 'y'
 
-  stack = stack_name(pkg, num_items, nodes, vbuckets, opts)
+  stack = stack_name(pkg, num_items, nodes, vbuckets, val_size, opts)
 
   `cfn-delete-stack #{stack} --force`
 end
 
 nodes_arr.each do |nodes|
-
   i = vbucket_min
-  while i <= vbucket_max
 
+  while i <= vbucket_max
     num_items_arr.each do |num_items|
-      test_dir, test_file = test_name(pkg, num_items, nodes, i, opts)
-      `mkdir -p ./out/#{test_dir}`
-      test_name = "#{test_dir}/#{test_file}.out"
-      print "#{test_name} ...\n"
-      cluster_host_port = prepare_cluster(pkg, num_items, nodes, i, opts)
-      `./runtest #{test_name} #{pkg} #{num_items} #{i} #{cluster_host_port} #{opts['extra_sleep']}`
-      sleep 1
-      destroy_cluster(pkg, num_items, nodes, i, opts)
+      val_size_arr.each do |val_size|
+        test_dir, test_file = test_name(pkg, num_items, nodes, i, val_size, opts)
+        `mkdir -p ./out/#{test_dir}`
+        test_name = "#{test_dir}/#{test_file}.out"
+        print "#{test_name} ...\n"
+        cluster_host_port = prepare_cluster(pkg, num_items, nodes, i, val_size, opts)
+        `./runtest #{test_name} #{pkg} #{num_items} #{i} #{cluster_host_port} #{opts['extra_sleep']}`
+        sleep 1
+        destroy_cluster(pkg, num_items, nodes, i, val_size, opts)
+      end
     end
 
     i = i * 2

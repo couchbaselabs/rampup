@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 
 if ARGV.length < 4
-  print("runtest TEST_NAME PKG_RPM NUM_ITEMS NUM_VBUCKETS [JOIN_URL] [EXTRA_SLEEP]\n")
+  print("runtest TEST_NAME PKG_RPM NUM_ITEMS NUM_VBUCKETS VAL_SIZE [JOIN_URL] [EXTRA_SLEEP]\n")
   exit(-1)
 end
 
@@ -11,8 +11,9 @@ $test_name    = ARGV[0]
 $pkg          = ARGV[1]
 $num_items    = ARGV[2]
 $num_vbuckets = ARGV[3]
-$join_url     = ARGV[4]
-$extra_sleep  = ARGV[5]
+$val_size     = ARGV[4] || "1000"
+$join_url     = ARGV[5]
+$extra_sleep  = ARGV[6]
 
 `mkdir -p out`
 $out_file = "out/#{$test_name}"
@@ -90,7 +91,7 @@ sleep $extra_sleep if $extra_sleep
 `curl -vX PUT http://127.0.0.1:5984/default/_design/rampup -d @rampup.json`
 
 step("loading-membase...", <<EOF
-     DRIVE_HOST=127.0.0.1 RATIO_SETS=1.0 RATIO_CREATES=1.0 MAX_CREATES=$3 EXIT_AFTER_CREATES=1 \
+     DRIVE_HOST=127.0.0.1 RATIO_SETS=1.0 RATIO_CREATES=1.0 MAX_CREATES=$3 EXIT_AFTER_CREATES=1 MIN_VALUE_SIZE=#{$val_size} \
        /opt/couchbase/bin/erl -pa . /opt/couchbase/lib/ns_server/erlang/lib/ns_server-*/ebin \
        -eval 'rampup:drive_test(), init:stop().'
 EOF
