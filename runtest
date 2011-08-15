@@ -23,7 +23,7 @@ $out_file = "out/#{$test_name}"
 $time_curr = $time_start = Time.now
 $time_prev = nil
 $mesg_prev = nil
-$step_num  = 1
+$step_num  = 0
 
 def step(mesg, cmd=nil, elapsed=nil)
   $time_curr = Time.now
@@ -33,9 +33,10 @@ def step(mesg, cmd=nil, elapsed=nil)
     `echo "# #{$step_num}. #{$mesg_prev} done. elapsed: #{elapsed}" >> #{$out_file}`
   end
 
+  $step_num  = $step_num + 1
+
   `echo "# #{$step_num}. #{mesg} #{$time_curr.strftime('%Y%m%d-%H%M%S')}" >> #{$out_file}`
 
-  $step_num  = $step_num + 1
   $time_prev = $time_curr
   $mesg_prev = mesg
 
