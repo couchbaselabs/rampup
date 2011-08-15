@@ -9,6 +9,7 @@ print "runtest #{ARGV}\n"
 
 $test_name    = ARGV[0]
 $pkg          = ARGV[1]
+$pkg_base     = $pkg.split('/')[-1].split('-')[0] # Ex: 'couchbase'
 $num_items    = ARGV[2]
 $num_vbuckets = ARGV[3]
 $val_size     = ARGV[4] || "1000"
@@ -23,11 +24,12 @@ $time_curr = $time_start = Time.now
 $time_prev = nil
 $mesg_prev = nil
 
-def step(mesg, cmd=nil)
+def step(mesg, cmd=nil, elapsed=nil)
   $time_curr = Time.now
 
   if $time_prev
-    `echo "# #{$mesg_prev} done. elapsed: #{$time_curr - $time_prev}" >> #{$out_file}`
+    elapsed = $time_curr - $time_prev unless elapsed
+    `echo "# #{$mesg_prev} done. elapsed: #{elapsed}" >> #{$out_file}`
   end
 
   `echo "# #{mesg} #{$time_curr.strftime('%Y%m%d-%H%M%S')}" >> #{$out_file}`
@@ -39,7 +41,7 @@ def step(mesg, cmd=nil)
 end
 
 def time(cmd)
-  system("top -u couchbase | egrep beam.smp > /tmp/top.out &")
+  system("top -u #{$pkg_base} | egrep beam.smp > /tmp/top.out &")
 
   `#{cmd}`
 
@@ -47,21 +49,22 @@ def time(cmd)
   `tail -n 50 /tmp/top.out | head -n 10 >> #{$out_file}`
 end
 
-step("starting... runtest #{$test_name}")
+step("preparing... #{$test_name}")
 
 `killall -9 memcached || true`
 
-`/etc/init.d/couchbase-server stop || true`
-
-`rpm -e couchbase-server || true`
-`rm -rf /opt/couchbase/`
+['couchbase', 'membase'].each do |x|
+  `/etc/init.d/#{x}-server stop || true`
+  `rpm -e #{x}-server || true`
+  `rm -rf /opt/#{x}/`
+end
 
 step("installing...")
 
 `rpm -i #{$pkg}`
 
 sleep 5
-sleep $extra_sleep if $extra_sleep
+sleep $extra_sleep.to_i if $extra_sleep
 
 `rm -f after-install`
 `wget https://raw.github.com/couchbaselabs/rampup/master/after-install`
@@ -72,34 +75,34 @@ step("configuring...")
 
 if $join_url
   my_ip = `/sbin/ifconfig eth0|grep inet|awk {'print $2'}|cut -d":" -f2|head -n 1`
-  `/opt/couchbase/bin/membase rebalance -c #{$join_url} \
+  `/opt/#{$pkg_base}/bin/membase rebalance -c #{$join_url} \
     -u Administrator -p password \
     --server-add=#{my_ip}`
 else
-  `/opt/couchbase/bin/membase cluster-init -c 127.0.0.1 \
+  `/opt/#{$pkg_base}/bin/membase cluster-init -c 127.0.0.1 \
     --cluster-init-username=Administrator \
     --cluster-init-password=password`
-  `/opt/couchbase/bin/membase bucket-create -c 127.0.0.1 \
+  `/opt/#{$pkg_base}/bin/membase bucket-create -c 127.0.0.1 \
     -u Administrator -p password \
     --bucket=default --bucket-type=membase --bucket-password= \
     --bucket-ramsize=6440 --bucket-replica=0`
 end
 
 sleep 5
-sleep $extra_sleep if $extra_sleep
+sleep $extra_sleep.to_i if $extra_sleep
 
 `curl -vX PUT http://127.0.0.1:5984/default/_design/rampup -d @rampup.json`
 
 step("loading-membase...", <<EOF
      DRIVE_HOST=127.0.0.1 RATIO_SETS=1.0 RATIO_CREATES=1.0 MAX_CREATES=$3 EXIT_AFTER_CREATES=1 MIN_VALUE_SIZE=#{$val_size} \
-       /opt/couchbase/bin/erl -pa . /opt/couchbase/lib/ns_server/erlang/lib/ns_server-*/ebin \
+       /opt/#{$pkg_base}/bin/erl -pa . /opt/#{$pkg_base}/lib/ns_server/erlang/lib/ns_server-*/ebin \
        -eval 'rampup:drive_test(), init:stop().'
 EOF
 )
 
 step("using-membase...", <<EOF
      DRIVE_HOST=127.0.0.1 RATIO_SETS=0.0 MAX_OPS=10000 \
-       /opt/couchbase/bin/erl -pa . /opt/couchbase/lib/ns_server/erlang/lib/ns_server-*/ebin \
+       /opt/#{$pkg_base}/bin/erl -pa . /opt/#{$pkg_base}/lib/ns_server/erlang/lib/ns_server-*/ebin \
        -eval 'rampup:drive_test(), init:stop().'
 EOF
 )
@@ -110,4 +113,23 @@ step("view-building...",
 step("view-accessing...",
      "./rampup-view.rb 127.0.0.1 10000 >> #{$out_file}")
 
-step("done...")
+step("stopping...",
+     "/etc/init.d/#{$pkg_base}-server stop")
+
+step("restarting...",
+     "/etc/init.d/#{$pkg_base}-server start")
+
+step("warming...")
+
+i = 0
+while i < 100000
+  sleep 2
+  w = `/opt/#{$pkg_base}/bin/mbstats 127.0.0.1:11210 all | grep "ep_warmup:"`
+  break if w.include?('true')
+  i = i + 1
+end
+
+w = `/opt/#{$pkg_base}/bin/mbstats 127.0.0.1:11210 all | grep "ep_warmup_time:"`
+w = w.split(' ')[-1]
+
+step("done...", nil, w)
