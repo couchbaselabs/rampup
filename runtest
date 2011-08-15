@@ -23,17 +23,19 @@ $out_file = "out/#{$test_name}"
 $time_curr = $time_start = Time.now
 $time_prev = nil
 $mesg_prev = nil
+$step_num  = 1
 
 def step(mesg, cmd=nil, elapsed=nil)
   $time_curr = Time.now
 
   if $time_prev
     elapsed = $time_curr - $time_prev unless elapsed
-    `echo "# #{$mesg_prev} done. elapsed: #{elapsed}" >> #{$out_file}`
+    `echo "# #{$step_num}. #{$mesg_prev} done. elapsed: #{elapsed}" >> #{$out_file}`
   end
 
-  `echo "# #{mesg} #{$time_curr.strftime('%Y%m%d-%H%M%S')}" >> #{$out_file}`
+  `echo "# #{$step_num}. #{mesg} #{$time_curr.strftime('%Y%m%d-%H%M%S')}" >> #{$out_file}`
 
+  $step_num  = $step_num + 1
   $time_prev = $time_curr
   $mesg_prev = mesg
 
