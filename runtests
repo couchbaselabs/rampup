@@ -26,6 +26,7 @@ opts = {
   'cluster.type' => 'existing',
   'cluster.user' => 'ec2-user',
   'cluster.hosts' => '',
+  'cluster.identity' => 'path-to-identity-file',
   'cluster.teardown' => 'y',
   'cluster.package-url-base' => 'http://packages.northscale.com/latestbuilds',
   'cluster.ram-for-default-bucket' => '6440',
@@ -39,6 +40,8 @@ opts = {
   key, val = x.split('=')
   opts[key] = val
 }
+
+$ssh = "ssh -i #{opts['cluster.identity']} #{user}@#{host}"
 
 def test_name(pkg, num_items, nodes, vbuckets, val_size, opts)
   pkg = pkg.split('/')[-1]
@@ -158,27 +161,27 @@ def prepare_cluster_existing(pkg_in, num_items, nodes, vbuckets, val_size, opts)
   while i < nodes
     host = hosts[i - 1]
 
-    `ssh #{user}@#{host} sudo killall -9 memcached`
-    `ssh #{user}@#{host} sudo rpm -e #{pkg_base}-server`
-    `ssh #{user}@#{host} sudo rm -rf /opt/#{pkg_base} #{pkg_in}`
-    `ssh #{user}@#{host} wget -O #{pkg_in} #{pkg_url}`
-    `ssh #{user}@#{host} sudo rpm -i #{pkg_in}`
-    `ssh #{user}@#{host} rm -f after-install`
-    `ssh #{user}@#{host} wget https://raw.github.com/couchbaselabs/rampup/master/after-install`
-    `ssh #{user}@#{host} chmod a+x after-install`
-    `ssh #{user}@#{host} sudo ./after-install #{vbuckets}`
+    `#{$ssh} sudo killall -9 memcached`
+    `#{$ssh} sudo rpm -e #{pkg_base}-server`
+    `#{$ssh} sudo rm -rf /opt/#{pkg_base} #{pkg_in}`
+    `#{$ssh} wget -O #{pkg_in} #{pkg_url}`
+    `#{$ssh} sudo rpm -i #{pkg_in}`
+    `#{$ssh} rm -f after-install`
+    `#{$ssh} wget https://raw.github.com/couchbaselabs/rampup/master/after-install`
+    `#{$ssh} chmod a+x after-install`
+    `#{$ssh} sudo ./after-install #{vbuckets}`
 
     if i == 1
-      `ssh #{user}@#{host} /opt/#{$pkg_base}/bin/membase cluster-init -c 127.0.0.1 \
+      `#{$ssh} /opt/#{$pkg_base}/bin/membase cluster-init -c 127.0.0.1 \
         --cluster-init-username=Administrator \
         --cluster-init-password=password`
-      `ssh #{user}@#{host} /opt/#{$pkg_base}/bin/membase bucket-create -c 127.0.0.1 \
+      `#{$ssh} /opt/#{$pkg_base}/bin/membase bucket-create -c 127.0.0.1 \
         -u Administrator -p password \
         --bucket=default --bucket-type=membase --bucket-password= \
         --bucket-ramsize=#{opts['cluster.ram-for-default-bucket']} \
         --bucket-replica=#{opts['cluster.replica-count']}`
     else
-      `ssh #{user}@#{host} /opt/#{$pkg_base}/bin/membase server-add -c #{hosts[0]} \
+      `#{$ssh} /opt/#{$pkg_base}/bin/membase server-add -c #{hosts[0]} \
         -u Administrator -p password \
         --server-add=#{host}`
     end
@@ -197,8 +200,8 @@ def teardown_cluster_existing(pkg, num_items, nodes, vbuckets, val_size, opts)
   pkg_base = pkg.split('-')[0]  # Ex: 'couchbase'
   pkg_url  = "#{opts['cluster.package-url-base']}/#{pkg}"
 
-  `ssh #{user}@#{host} sudo killall -9 memcached`
-  `ssh #{user}@#{host} sudo /etc/init.d/#{pkg_base}-server stop`
+  `#{$ssh} sudo killall -9 memcached`
+  `#{$ssh} sudo /etc/init.d/#{pkg_base}-server stop`
 end
 
 # ------------------------------------------
