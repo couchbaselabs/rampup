@@ -6,8 +6,8 @@ pkg = ARGV[0] # Ex: "../couchbase-server-community_x86_64_2.0.0r-289-gc0dbb43.rp
 
 unless pkg
   print "usage: ./runtests $package $num_items,csv $nodes,csv $vbucket-range $val-size-arr [$key=val,csv]\n"
-  print "ex:    ./runtests couchbase-server*.rpm 1000,100000,1000000 1,2,3,4 1-64 128,1000,10000\n"
-  print "ex:    ./runtests couchbase-server*.rpm 100000 1 1 1000\n"
+  print "example: ./runtests couchbase-server*.rpm 1000,100000,1000000 1,2,3,4 1-64 128,1000,10000\n"
+  print "example: ./runtests couchbase-server*.rpm 100000 1 1 1000\n"
   exit(-1)
 end
 
@@ -51,6 +51,12 @@ def stack_name(pkg, num_items, nodes, vbuckets, val_size, opts)
 end
 
 def prepare_cluster(pkg_in, num_items, nodes, vbuckets, val_size, opts)
+  return nil if nodes <= 1
+
+  prepare_cluster_ec2_cfn_new(pkg_in, num_items, nodes, vbuckets, val_size, opts)
+end
+
+def prepare_cluster_ec2_cfn_new(pkg_in, num_items, nodes, vbuckets, val_size, opts)
   return nil if nodes <= 1
 
   # Prepare an AWS EC2 CloudFormation cluster (or a stack) with nodes number of nodes.
@@ -98,6 +104,13 @@ def prepare_cluster(pkg_in, num_items, nodes, vbuckets, val_size, opts)
 end
 
 def destroy_cluster(pkg, num_items, nodes, vbuckets, val_size, opts)
+  return if nodes <= 1
+  return if opts['stack.destroy'] != 'y'
+
+  destroy_cluster_ec2_cfn_new(pkg, num_items, nodes, vbuckets, val_size, opts)
+end
+
+def destroy_cluster_ec2_cfn_new(pkg, num_items, nodes, vbuckets, val_size, opts)
   return if nodes <= 1
   return if opts['stack.destroy'] != 'y'
 
