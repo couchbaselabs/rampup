@@ -41,7 +41,7 @@ opts = {
   opts[key] = val
 }
 
-$ssh = "ssh -i #{opts['cluster.identity']}"
+$ssh = "ssh -i #{opts['cluster.identity']} -t"
 
 def test_name(pkg, num_items, nodes, vbuckets, val_size, opts)
   pkg = pkg.split('/')[-1]
