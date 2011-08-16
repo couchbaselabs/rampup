@@ -23,13 +23,16 @@ val_size_arr  = (ARGV[4] || "1000").split(',').map {|x| x.to_i}
 
 opts = {
   'extra_sleep' => '',
-  'cluster.type' => 'new-stack',
+  'cluster.type' => 'existing',
+  'cluster.user' => 'ec2-user',
+  'cluster.hosts' => '',
   'cluster.teardown' => 'y',
+  'cluster.package-url-base' => 'http://packages.northscale.com/latestbuilds',
+  'cluster.ram-for-default-bucket' => '6440',
+  'cluster.replica-count' => '0',
   'stack.PackageVerBase' => '2.0.0',
-  'stack.PackageURLBase' => 'http://packages.northscale.com/latestbuilds',
   'stack.KeyName' => 'steveyen-key',
-  'stack.InstanceType' => 'm1.large',
-  'stack.RAMForDefaultBucket' => '6440'
+  'stack.InstanceType' => 'm1.large'
 }
 
 (ARGV[5] || "").split(',').each {|x|
@@ -59,6 +62,8 @@ def prepare_cluster(pkg_in, num_items, nodes, vbuckets, val_size, opts)
   if opts['cluster.type'] == 'new-stack'
     return prepare_cluster_new_stack(pkg_in, num_items, nodes, vbuckets, val_size, opts)
   end
+
+  return prepare_cluster_existing(pkg_in, num_items, nodes, vbuckets, val_size, opts)
 end
 
 def teardown_cluster(pkg, num_items, nodes, vbuckets, val_size, opts)
@@ -68,6 +73,8 @@ def teardown_cluster(pkg, num_items, nodes, vbuckets, val_size, opts)
   if opts['cluster.type'] == 'new-stack'
     return teardown_cluster_new_stack(pkg, num_items, nodes, vbuckets, val_size, opts)
   end
+
+  return teardown_cluster_existing(pkg, num_items, nodes, vbuckets, val_size, opts)
 end
 
 # ------------------------------------------
@@ -80,7 +87,7 @@ def prepare_cluster_new_stack(pkg_in, num_items, nodes, vbuckets, val_size, opts
   pkg      = pkg_in
   pkg      = pkg.split('/')[-1] # Ex: 'couchbase-server-community_x86_64_2.0.0r-289-gc0dbb43.rpm'
   pkg_base = pkg.split('-')[0]  # Ex: 'couchbase'
-  pkg_url  = "#{opts['stack.PackageURLBase']}/#{pkg}"
+  pkg_url  = "#{opts['cluster.package-url-base']}/#{pkg}"
 
   unless File.exists?(pkg_in)
     `wget -O #{pkg_in} #{pkg_url}`
@@ -95,10 +102,10 @@ def prepare_cluster_new_stack(pkg_in, num_items, nodes, vbuckets, val_size, opts
   parameters =
     "PackageURL=#{pkg_url};" +
     "RESTPassword=password;" +
-    "RAMForDefaultBucket=#{opts['stack.RAMForDefaultBucket']};" +
+    "RAMForDefaultBucket=#{opts['cluster.ram-for-default-bucket']};" +
     "UserTag=none;" +
     "ExistingClusterHostPort=host:port;" +
-    "RAMPerServer=#{opts['stack.RAMForDefaultBucket']};" +
+    "RAMPerServer=#{opts['cluster.ram-for-default-bucket']};" +
     "KeyName=#{opts['stack.KeyName']};" +
     "InstanceType=#{opts['stack.InstanceType']};" +
     "NumVBuckets=#{vbuckets}"
@@ -125,6 +132,73 @@ def teardown_cluster_new_stack(pkg, num_items, nodes, vbuckets, val_size, opts)
   stack = stack_name(pkg, num_items, nodes, vbuckets, val_size, opts)
 
   `cfn-delete-stack #{stack} --force`
+end
+
+# ------------------------------------------
+
+def prepare_cluster_existing(pkg_in, num_items, nodes, vbuckets, val_size, opts)
+  return nil if nodes <= 1
+
+  hosts = opts['cluster.hosts'].split(',')
+  user  = opts['cluster.user']
+
+  if nodes > hosts.length + 1
+    print("ERROR: Not enough cluster.hosts (#{hosts}) for #{nodes} number of nodes.\n")
+    exit(-1)
+  end
+
+  # Prepare an AWS EC2 CloudFormation cluster (or a stack) with nodes number of nodes.
+  #
+  pkg      = pkg_in
+  pkg      = pkg.split('/')[-1] # Ex: 'couchbase-server-community_x86_64_2.0.0r-289-gc0dbb43.rpm'
+  pkg_base = pkg.split('-')[0]  # Ex: 'couchbase'
+  pkg_url  = "#{opts['cluster.package-url-base']}/#{pkg}"
+
+  i = 1
+  while i < nodes
+    host = hosts[i - 1]
+
+    `ssh #{user}@#{host} sudo killall -9 memcached`
+    `ssh #{user}@#{host} sudo rpm -e #{pkg_base}-server`
+    `ssh #{user}@#{host} sudo rm -rf /opt/#{pkg_base} #{pkg_in}`
+    `ssh #{user}@#{host} wget -O #{pkg_in} #{pkg_url}`
+    `ssh #{user}@#{host} sudo rpm -i #{pkg_in}`
+    `ssh #{user}@#{host} rm -f after-install`
+    `ssh #{user}@#{host} wget https://raw.github.com/couchbaselabs/rampup/master/after-install`
+    `ssh #{user}@#{host} chmod a+x after-install`
+    `ssh #{user}@#{host} sudo ./after-install #{vbuckets}`
+
+    if i == 1
+      `ssh #{user}@#{host} /opt/#{$pkg_base}/bin/membase cluster-init -c 127.0.0.1 \
+        --cluster-init-username=Administrator \
+        --cluster-init-password=password`
+      `ssh #{user}@#{host} /opt/#{$pkg_base}/bin/membase bucket-create -c 127.0.0.1 \
+        -u Administrator -p password \
+        --bucket=default --bucket-type=membase --bucket-password= \
+        --bucket-ramsize=#{opts['cluster.ram-for-default-bucket']} \
+        --bucket-replica=#{opts['cluster.replica-count']}`
+    else
+      `ssh #{user}@#{host} /opt/#{$pkg_base}/bin/membase server-add -c #{hosts[0]} \
+        -u Administrator -p password \
+        --server-add=#{host}`
+    end
+
+    i = i + 1
+  end
+
+  return hosts[0]
+end
+
+def teardown_cluster_existing(pkg, num_items, nodes, vbuckets, val_size, opts)
+  return if nodes <= 1
+
+  pkg      = pkg_in
+  pkg      = pkg.split('/')[-1] # Ex: 'couchbase-server-community_x86_64_2.0.0r-289-gc0dbb43.rpm'
+  pkg_base = pkg.split('-')[0]  # Ex: 'couchbase'
+  pkg_url  = "#{opts['cluster.package-url-base']}/#{pkg}"
+
+  `ssh #{user}@#{host} sudo killall -9 memcached`
+  `ssh #{user}@#{host} sudo /etc/init.d/#{pkg_base}-server stop`
 end
 
 # ------------------------------------------
