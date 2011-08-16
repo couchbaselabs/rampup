@@ -7,96 +7,59 @@ import time
 
 import couchdb
 
-MAP_DEF = """
-(doc) ->
-  doc.details.forEach((deet) ->
-                       lbl = deet.label
-                       m = lbl.match(/^(start|done)/)
-                       if m
-                          lbl = m[0]
-                       if deet.elapsed
-                          emit([doc.build, doc.vbuckets], [lbl, deet.elapsed])
-                      )
-"""
+def process_file(db, test, filename, run, build, num_items, num_nodes, num_vbuckets, val_size):
 
-SUPERFLUOUS = re.compile("\.\.\.|view|membase")
-
-exprs = [
-    ('timestamp', re.compile(r'(\d{4})(\d{2})(\d{2})-(\d{2})(\d{2})(\d{2})')),
-    ('label', re.compile(r'#\s+(.*)')),
-    ('top', re.compile(r'.*\s+(\d+)m\s+(\d+)m.*\s+\w\s+(\d+.\d+).*(\d+:\d+\.\d+)\s+([A-z.]+)')),
-    ('requests', re.compile(r'requests\s(\d+)')),
-    ('reqs_per_sec', re.compile(r'req/sec\s(\d+\.\d+)')),
-    ('time', re.compile(r'time (\d+\.\d+)')),
-    ('time', re.compile(r'.*\s+(\d+:\d+\.\d+)\s*elapsed\s'))
-]
-
-def is_multi(field):
-    return field == 'top'
-
-def maybe_number(ob):
-    try:
-        if ':' in ob:
-            parts = ob.split(':')
-            assert len(parts) == 2
-            return int(parts[0]) * 60 + float(parts[1])
-        elif '.' in ob:
-            return float(ob)
-        else:
-            return int(ob)
-    except:
-        return ob
-
-def process_file(run, vbuckets, filename):
-
-    current = {}
-    parts = []
-    prevtime = None
+    details = []
 
     for line in open(filename):
-        name = None
-        for name, r in exprs:
-            match = r.search(line)
-            if match:
-                field = name
-                break
+        if line.find('done. elapsed: ') > 0:
+            # Example line == "# 6. view-building... done. elapsed: 0.10278"
+            #
+            parts   = line.split(' ')
+            step    = int(parts[1].rstrip('.'))
+            label   = parts[2].rstrip('.')
+            elapsed = float(parts[-1])
 
-        if match:
-            if field == 'label':
-                val = SUPERFLUOUS.sub('', match.groups()[0]).strip()
-                if current:
-                    parts.append(current)
-                current = {'label': val}
-            elif field == 'timestamp':
-                current['timeparts'] = [maybe_number(x) for x in match.groups()]
-                t = int(time.mktime(tuple(current['timeparts']) + (-1, -1, -1)))
-                current['unixtime'] = t
-                if prevtime:
-                    # current['elapsed'] = t - prevtime
-                    parts[-1]['elapsed'] = t - prevtime
-                prevtime = t
-            else:
-                val = [maybe_number(x) for x in match.groups()]
-                if len(val) == 1:
-                    val = val[0]
-                if is_multi(field):
-                    if field not in current:
-                        current[field] = []
-                        current[field].append(val)
-                else:
-                    current[field] = maybe_number(val)
+            details.append({ 'step': step, 'label': label, 'elapsed': elapsed })
 
-    parts.append(current)
-
-    db = couchdb.Server('http://localhost:5984/')['viewperf']
-    db.update([{'build': run, 'run': run, 'vbuckets': vbuckets, 'details': parts}])
+    db.update([{'test': test, 'filename': filename, 'run': run, 'build': build,
+                'items': num_items, 'nodes': num_nodes, 'vbuckets': num_vbuckets, 'val_size': val_size,
+                'details': details}])
 
 if __name__ == '__main__':
 
-    run = sys.argv[1]
+    if len(sys.argv) < 4:
+        print("usage: " + sys.argv[0] + " http://HOST:5984/COUCH_DBNAME TEST_NAME OUT0 [OUT1 ... OUTN]\n")
+        print("example: ./storeOutput.py http://127.0.0.1:5984/viewperf 289-physical out-20110815090708/test-20110815090708_couchbase-2.0.0r-289-gc0dbb43/*\n")
+        print("Cooks the output files from runtests and uploads to couchdb.\n")
+        exit('ERROR: not enough parameters')
 
-    for f in sys.argv[2:]:
-        vbs = int(f.split('-')[-1])
-        process_file(run, vbs, f)
+    couch = sys.argv[1] # Ex: "http://localhost:5984/viewperf"
+    test  = sys.argv[2] # Ex: "289-physical"
 
-    # json.dump(parts, sys.stdout, indent=True)
+    couch_server = '/'.join(couch.split('/')[0:-1]) # Ex: 'http://localhost:5984/'
+    couch_dbname = couch.split('/')[-1]             # Ex: 'viewperf'
+
+    db = couchdb.Server(couch_server)[couch_dbname]
+
+    for f in sys.argv[3:]:
+        # Example f...
+        #   "test-20110815090708_couchbase-2.0.0r-289-gc0dbb43/100000-1-1-1024.out"
+        #   "out/test-20110815090708_couchbase-2.0.0r-289-gc0dbb43/100000-1-1-1024.out"
+        #   "out-20110815090708/test-20110815090708_couchbase-2.0.0r-289-gc0dbb43/100000-1-1-1024.out"
+        #
+        run = f.split('/')[-2]     # Ex: "test-20110815090708_couchbase-2.0.0r-289-gc0dbb43"
+        build = run.split('_')[-1] # Ex: "couchbase-2.0.0r-289-gc0dbb43"
+
+        n = f.split('/')[-1].split('.')[0] # Ex: 100000-1-1-1024
+        n = n.split('-')                   # Ex: [100000, 1, 1, 1024]
+
+        num_items    = int(n[0])
+        num_nodes    = int(n[1])
+        num_vbuckets = int(n[2])
+        val_size     = int(n[3])
+
+        print(run, build, num_items, num_nodes, num_vbuckets, val_size)
+
+        process_file(db, test, f, run, build, num_items, num_nodes, num_vbuckets, val_size)
+
