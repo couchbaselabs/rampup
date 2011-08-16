@@ -23,7 +23,8 @@ val_size_arr  = (ARGV[4] || "1000").split(',').map {|x| x.to_i}
 
 opts = {
   'extra_sleep' => '',
-  'stack.destroy' => 'y',
+  'cluster.type' => 'new-stack',
+  'cluster.teardown' => 'y',
   'stack.PackageVerBase' => '2.0.0',
   'stack.PackageURLBase' => 'http://packages.northscale.com/latestbuilds',
   'stack.KeyName' => 'steveyen-key',
@@ -50,13 +51,28 @@ def stack_name(pkg, num_items, nodes, vbuckets, val_size, opts)
   return stack
 end
 
+# ------------------------------------------
+
 def prepare_cluster(pkg_in, num_items, nodes, vbuckets, val_size, opts)
   return nil if nodes <= 1
 
-  prepare_cluster_ec2_cfn_new(pkg_in, num_items, nodes, vbuckets, val_size, opts)
+  if opts['cluster.type'] == 'new-stack'
+    return prepare_cluster_new_stack(pkg_in, num_items, nodes, vbuckets, val_size, opts)
+  end
 end
 
-def prepare_cluster_ec2_cfn_new(pkg_in, num_items, nodes, vbuckets, val_size, opts)
+def teardown_cluster(pkg, num_items, nodes, vbuckets, val_size, opts)
+  return if nodes <= 1
+  return if opts['cluster.teardown'] != 'y'
+
+  if opts['cluster.type'] == 'new-stack'
+    return teardown_cluster_new_stack(pkg, num_items, nodes, vbuckets, val_size, opts)
+  end
+end
+
+# ------------------------------------------
+
+def prepare_cluster_new_stack(pkg_in, num_items, nodes, vbuckets, val_size, opts)
   return nil if nodes <= 1
 
   # Prepare an AWS EC2 CloudFormation cluster (or a stack) with nodes number of nodes.
@@ -103,21 +119,15 @@ def prepare_cluster_ec2_cfn_new(pkg_in, num_items, nodes, vbuckets, val_size, op
   end
 end
 
-def teardown_cluster(pkg, num_items, nodes, vbuckets, val_size, opts)
+def teardown_cluster_new_stack(pkg, num_items, nodes, vbuckets, val_size, opts)
   return if nodes <= 1
-  return if opts['stack.destroy'] != 'y'
-
-  teardown_cluster_ec2_cfn_new(pkg, num_items, nodes, vbuckets, val_size, opts)
-end
-
-def teardown_cluster_ec2_cfn_new(pkg, num_items, nodes, vbuckets, val_size, opts)
-  return if nodes <= 1
-  return if opts['stack.destroy'] != 'y'
 
   stack = stack_name(pkg, num_items, nodes, vbuckets, val_size, opts)
 
   `cfn-delete-stack #{stack} --force`
 end
+
+# ------------------------------------------
 
 nodes_arr.each do |nodes|
   i = vbucket_min
