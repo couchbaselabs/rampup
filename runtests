@@ -103,14 +103,14 @@ def prepare_cluster_ec2_cfn_new(pkg_in, num_items, nodes, vbuckets, val_size, op
   end
 end
 
-def destroy_cluster(pkg, num_items, nodes, vbuckets, val_size, opts)
+def teardown_cluster(pkg, num_items, nodes, vbuckets, val_size, opts)
   return if nodes <= 1
   return if opts['stack.destroy'] != 'y'
 
-  destroy_cluster_ec2_cfn_new(pkg, num_items, nodes, vbuckets, val_size, opts)
+  teardown_cluster_ec2_cfn_new(pkg, num_items, nodes, vbuckets, val_size, opts)
 end
 
-def destroy_cluster_ec2_cfn_new(pkg, num_items, nodes, vbuckets, val_size, opts)
+def teardown_cluster_ec2_cfn_new(pkg, num_items, nodes, vbuckets, val_size, opts)
   return if nodes <= 1
   return if opts['stack.destroy'] != 'y'
 
@@ -132,7 +132,7 @@ nodes_arr.each do |nodes|
         cluster_host_port = prepare_cluster(pkg, num_items, nodes, i, val_size, opts)
         `./runtest #{test_name} #{pkg} #{num_items} #{i} #{cluster_host_port} #{opts['extra_sleep']}`
         sleep 1
-        destroy_cluster(pkg, num_items, nodes, i, val_size, opts)
+        teardown_cluster(pkg, num_items, nodes, i, val_size, opts)
       end
     end
 
