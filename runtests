@@ -204,7 +204,7 @@ end
 def teardown_cluster_existing(pkg_in, ram_quota, replica_count, num_items, nodes, vbuckets, val_size, opts)
   return if nodes <= 1
 
-  hosts = opts['cluster.hosts'].split(',')
+  hosts = opts['cluster.hosts'].split('+')
   user  = opts['cluster.user']
 
   pkg      = pkg_in
