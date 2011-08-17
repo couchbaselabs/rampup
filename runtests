@@ -162,13 +162,12 @@ def prepare_cluster_existing(pkg_in, num_items, nodes, vbuckets, val_size, opts)
   pkg_base = pkg.split('-')[0]  # Ex: 'couchbase'
   pkg_url  = "#{opts['cluster.package-url-base']}/#{pkg}"
 
+  teardown_cluster_existing(pkg_in, num_items, nodes, vbuckets, val_size, opts)
+
   i = 1
   while i < nodes
     host = hosts[i - 1]
 
-    run "#{$ssh} #{user}@#{host} sudo killall -9 memcached"
-    run "#{$ssh} #{user}@#{host} sudo rpm -e #{pkg_base}-server"
-    run "#{$ssh} #{user}@#{host} sudo rm -rf /opt/#{pkg_base} #{pkg_in}"
     run "#{$ssh} #{user}@#{host} sudo wget -O #{pkg_in} #{pkg_url}"
     run "#{$ssh} #{user}@#{host} sudo rpm -i #{pkg_in}"
     run "#{$ssh} #{user}@#{host} rm -f after-install"
@@ -208,14 +207,11 @@ def teardown_cluster_existing(pkg_in, num_items, nodes, vbuckets, val_size, opts
   pkg_base = pkg.split('-')[0]  # Ex: 'couchbase'
   pkg_url  = "#{opts['cluster.package-url-base']}/#{pkg}"
 
-  i = 1
-  while i < nodes
-    host = hosts[i - 1]
-
+  hosts.each do |host|
     run "#{$ssh} #{user}@#{host} sudo killall -9 memcached"
     run "#{$ssh} #{user}@#{host} sudo /etc/init.d/#{pkg_base}-server stop"
-
-    i = i + 1
+    run "#{$ssh} #{user}@#{host} sudo rpm -e #{pkg_base}-server"
+    run "#{$ssh} #{user}@#{host} sudo rm -rf /opt/#{pkg_base} #{pkg_in}"
   end
 end
 
