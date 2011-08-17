@@ -238,7 +238,7 @@ ram_quotas_arr.each do |ram_quota|
 
             cluster_host_port = prepare_cluster(pkg, ram_quota, replica_count, num_items, nodes, i, val_size, opts)
 
-            `./runtest #{test_name} #{pkg} #{ram_quota} #{replica_count} #{num_items} #{i} #{cluster_host_port} #{opts['extra_sleep']}`
+            run "./runtest #{test_name} #{pkg} #{ram_quota} #{replica_count} #{num_items} #{i} #{cluster_host_port} #{opts['extra_sleep']}"
             sleep 1
 
             teardown_cluster(pkg, ram_quota, replica_count, num_items, nodes, i, val_size, opts)
