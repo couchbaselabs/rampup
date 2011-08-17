@@ -5,7 +5,7 @@ if ARGV.length < 4
   exit(-1)
 end
 
-print "runtest #{ARGV}\n"
+print "runtest #{ARGV.join(' ')}\n"
 
 $test_name     = ARGV[0]
 $pkg           = ARGV[1]
