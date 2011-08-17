@@ -18,9 +18,14 @@ $val_size      = ARGV[6] || "1000"
 $join_url      = ARGV[7]
 $extra_sleep   = ARGV[8]
 
-`mkdir -p out`
+def run(cmd)
+  print("#{cmd}\n")
+  `#{cmd}`
+end
+
+run "mkdir -p out"
 $out_file = "out/#{$test_name}"
-`rm -f #{$out_file}`
+run "rm -f #{$out_file}"
 
 $time_curr = $time_start = Time.now
 $time_prev = nil
@@ -48,7 +53,7 @@ end
 def time(cmd)
   system("top -u #{$pkg_base} | egrep beam.smp > /tmp/top.out &")
 
-  `#{cmd}`
+  run cmd
 
   `killall top`
   `tail -n 50 /tmp/top.out | head -n 10 >> #{$out_file}`
@@ -56,47 +61,47 @@ end
 
 step("preparing... #{$test_name}")
 
-`sudo killall -9 memcached || true`
+run "sudo killall -9 memcached || true"
 
 ['couchbase', 'membase'].each do |x|
-  `sudo /etc/init.d/#{x}-server stop || true`
-  `sudo rpm -e #{x}-server || true`
-  `sudo rm -rf /opt/#{x}/`
+  run "sudo /etc/init.d/#{x}-server stop || true"
+  run "sudo rpm -e #{x}-server || true"
+  run "sudo rm -rf /opt/#{x}/"
 end
 
 step("installing...")
 
-`sudo rpm -i #{$pkg}`
+run "sudo rpm -i #{$pkg}"
 
 sleep 5
 sleep $extra_sleep.to_i if $extra_sleep
 
-`rm -f after-install`
-`wget https://raw.github.com/couchbaselabs/rampup/master/after-install`
-`chmod a+x after-install`
-`sudo ./after-install #{$num_vbuckets}`
+run "rm -f after-install"
+run "wget https://raw.github.com/couchbaselabs/rampup/master/after-install"
+run "chmod a+x after-install"
+run "sudo ./after-install #{$num_vbuckets}"
 
 step("configuring...")
 
 if $join_url
   my_ip = `/sbin/ifconfig eth0|grep inet|awk {'print $2'}|cut -d":" -f2|head -n 1`
-  `/opt/#{$pkg_base}/bin/membase rebalance -c #{$join_url} \
+  run "/opt/#{$pkg_base}/bin/membase rebalance -c #{$join_url} \
     -u Administrator -p password \
-    --server-add=#{my_ip}`
+    --server-add=#{my_ip}"
 else
-  `/opt/#{$pkg_base}/bin/membase cluster-init -c 127.0.0.1 \
+  run "/opt/#{$pkg_base}/bin/membase cluster-init -c 127.0.0.1 \
     --cluster-init-username=Administrator \
-    --cluster-init-password=password`
-  `/opt/#{$pkg_base}/bin/membase bucket-create -c 127.0.0.1 \
+    --cluster-init-password=password"
+  run "/opt/#{$pkg_base}/bin/membase bucket-create -c 127.0.0.1 \
     -u Administrator -p password \
     --bucket=default --bucket-type=membase --bucket-password= \
-    --bucket-ramsize=#{$ram_quota} --bucket-replica=#{$replica_count}`
+    --bucket-ramsize=#{$ram_quota} --bucket-replica=#{$replica_count}"
 end
 
 sleep 5
 sleep $extra_sleep.to_i if $extra_sleep
 
-`curl -vX PUT http://127.0.0.1:5984/default/_design/rampup -d @rampup.json`
+run "curl -vX PUT http://127.0.0.1:5984/default/_design/rampup -d @rampup.json"
 
 step("loading-membase...", <<EOF
      DRIVE_HOST=127.0.0.1 RATIO_SETS=1.0 RATIO_CREATES=1.0 MAX_CREATES=$3 EXIT_AFTER_CREATES=1 MIN_VALUE_SIZE=#{$val_size} \
