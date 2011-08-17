@@ -7,7 +7,7 @@
 cp /opt/couchbase/bin/membase-server /opt/couchbase/bin/membase-server.orig
 cp /opt/couchbase/etc/couchdb/default.ini /opt/couchbase/etc/couchdb/default.ini.orig
 
-/etc/init.d/couchbase-server stop || true
+sudo /etc/init.d/couchbase-server stop || true
 
 rm -f membase-server.num_vbuckets
 wget -O membase-server.num_vbuckets https://raw.github.com/couchbaselabs/rampup/master/membase-server.num_vbuckets
@@ -18,6 +18,6 @@ sed -e "s,@@MEMBASE_NUM_VBUCKETS@@,$1,g" membase-server.num_vbuckets > \
 sed -e "s,os_process_limit = 50,os_process_limit = 0,g" /opt/couchbase/etc/couchdb/default.ini.orig | \
   sed -e "s,;socket_options,socket_options,g" > /opt/couchbase/etc/couchdb/default.ini
 
-/etc/init.d/couchbase-server start
+sudo /etc/init.d/couchbase-server start
 
 sleep 5 $2
