@@ -136,7 +136,7 @@ while i < 100000
   sleep 2
   w = `/opt/#{$pkg_base}/bin/mbstats 127.0.0.1:11210 all | grep "ep_warmup:"`
   w = w.split(' ')[-1]
-  break if w == "1"
+  break if w == "1" or w == "true"
   i = i + 1
 end
 
