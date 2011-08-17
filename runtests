@@ -197,7 +197,7 @@ def prepare_cluster_existing(pkg_in, num_items, nodes, vbuckets, val_size, opts)
   return hosts[0]
 end
 
-def teardown_cluster_existing(pkg, num_items, nodes, vbuckets, val_size, opts)
+def teardown_cluster_existing(pkg_in, num_items, nodes, vbuckets, val_size, opts)
   return if nodes <= 1
 
   pkg      = pkg_in
