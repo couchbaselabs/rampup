@@ -26,7 +26,7 @@ opts = {
   'cluster.type' => 'existing',
   'cluster.user' => 'ec2-user',
   'cluster.hosts' => '',
-  'cluster.identity' => 'path-to-identity-file',
+  'cluster.identity' => nil,
   'cluster.teardown' => 'y',
   'cluster.package-url-base' => 'http://packages.northscale.com/latestbuilds',
   'cluster.ram-for-default-bucket' => '6440',
@@ -41,7 +41,8 @@ opts = {
   opts[key] = val
 }
 
-$ssh = "ssh -i #{opts['cluster.identity']} -t"
+$ssh = "ssh -t"
+$ssh = "ssh -i #{opts['cluster.identity']} -t" if opts['cluster.identity']
 
 def test_name(pkg, num_items, nodes, vbuckets, val_size, opts)
   pkg = pkg.split('/')[-1]
