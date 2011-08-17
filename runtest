@@ -1,20 +1,22 @@
 #!/usr/bin/env ruby
 
 if ARGV.length < 4
-  print("runtest TEST_NAME PKG_RPM NUM_ITEMS NUM_VBUCKETS VAL_SIZE [JOIN_URL] [EXTRA_SLEEP]\n")
+  print("runtest TEST_NAME PKG_RPM RAM_QUOTA REPLICA_COUNT NUM_ITEMS NUM_VBUCKETS VAL_SIZE [JOIN_URL] [EXTRA_SLEEP]\n")
   exit(-1)
 end
 
 print "runtest #{ARGV}\n"
 
-$test_name    = ARGV[0]
-$pkg          = ARGV[1]
-$pkg_base     = $pkg.split('/')[-1].split('-')[0] # Ex: 'couchbase'
-$num_items    = ARGV[2]
-$num_vbuckets = ARGV[3]
-$val_size     = ARGV[4] || "1000"
-$join_url     = ARGV[5]
-$extra_sleep  = ARGV[6]
+$test_name     = ARGV[0]
+$pkg           = ARGV[1]
+$pkg_base      = $pkg.split('/')[-1].split('-')[0] # Ex: 'couchbase'
+$ram_quota     = ARGV[2]
+$replica_count = ARGV[3]
+$num_items     = ARGV[4]
+$num_vbuckets  = ARGV[5]
+$val_size      = ARGV[6] || "1000"
+$join_url      = ARGV[7]
+$extra_sleep   = ARGV[8]
 
 `mkdir -p out`
 $out_file = "out/#{$test_name}"
@@ -88,7 +90,7 @@ else
   `/opt/#{$pkg_base}/bin/membase bucket-create -c 127.0.0.1 \
     -u Administrator -p password \
     --bucket=default --bucket-type=membase --bucket-password= \
-    --bucket-ramsize=6440 --bucket-replica=0`
+    --bucket-ramsize=#{$ram_quota} --bucket-replica=#{$replica_count}`
 end
 
 sleep 5

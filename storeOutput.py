@@ -7,7 +7,7 @@ import time
 
 import couchdb
 
-def process_file(db, test, filename, run, build, num_items, num_nodes, num_vbuckets, val_size):
+def process_file(db, test, filename, run, build, ram_quota, replica_count, num_items, num_nodes, num_vbuckets, val_size):
 
     details = []
 
@@ -23,7 +23,9 @@ def process_file(db, test, filename, run, build, num_items, num_nodes, num_vbuck
             details.append({ 'step': step, 'label': label, 'elapsed': elapsed })
 
     db.update([{'test': test, 'filename': filename, 'run': run, 'build': build,
-                'items': num_items, 'nodes': num_nodes, 'vbuckets': num_vbuckets, 'val_size': val_size,
+                'ram_quota': ram_quota, 'replica_count': replica_count,
+                'items': num_items, 'nodes': num_nodes,
+                'vbuckets': num_vbuckets, 'val_size': val_size,
                 'details': details}])
 
 if __name__ == '__main__':
@@ -44,22 +46,26 @@ if __name__ == '__main__':
 
     for f in sys.argv[3:]:
         # Example f...
-        #   "test-20110815090708_couchbase-2.0.0r-289-gc0dbb43/100000-1-1-1024.out"
-        #   "out/test-20110815090708_couchbase-2.0.0r-289-gc0dbb43/100000-1-1-1024.out"
-        #   "out-20110815090708/test-20110815090708_couchbase-2.0.0r-289-gc0dbb43/100000-1-1-1024.out"
+        #   "test-20110815090708_couchbase-2.0.0r-289-gc0dbb43/5000-0-100000-1-1-1024.out"
+        #   "out/test-20110815090708_couchbase-2.0.0r-289-gc0dbb43/5000-0-100000-1-1-1024.out"
+        #   "out-20110815090708/test-20110815090708_couchbase-2.0.0r-289-gc0dbb43/5000-0-100000-1-1-1024.out"
         #
         run = f.split('/')[-2]     # Ex: "test-20110815090708_couchbase-2.0.0r-289-gc0dbb43"
         build = run.split('_')[-1] # Ex: "couchbase-2.0.0r-289-gc0dbb43"
 
-        n = f.split('/')[-1].split('.')[0] # Ex: 100000-1-1-1024
-        n = n.split('-')                   # Ex: [100000, 1, 1, 1024]
+        n = f.split('/')[-1].split('.')[0] # Ex: 5000-0-100000-1-1-1024
+        n = n.split('-')                   # Ex: [5000, 0, 100000, 1, 1, 1024]
 
-        num_items    = int(n[0])
-        num_nodes    = int(n[1])
-        num_vbuckets = int(n[2])
-        val_size     = int(n[3])
+        ram_quota     = int(n[0])
+        replica_count = int(n[1])
+        num_items     = int(n[2])
+        num_nodes     = int(n[3])
+        num_vbuckets  = int(n[4])
+        val_size      = int(n[5])
 
-        print(run, build, num_items, num_nodes, num_vbuckets, val_size)
+        print(run, build,
+              ram_quota, replica_count, num_items, num_nodes, num_vbuckets, val_size)
 
-        process_file(db, test, f, run, build, num_items, num_nodes, num_vbuckets, val_size)
+        process_file(db, test, f, run, build,
+                     ram_quota, replica_count, num_items, num_nodes, num_vbuckets, val_size)
 
