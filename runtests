@@ -42,7 +42,7 @@ opts = {
 }
 
 $ssh = "ssh -t"
-$ssh = "ssh -i #{opts['cluster.identity']} -t" if opts['cluster.identity']
+$ssh = $ssh + " -i #{opts['cluster.identity']}" if opts['cluster.identity']
 
 def test_name(pkg, num_items, nodes, vbuckets, val_size, opts)
   pkg = pkg.split('/')[-1]
