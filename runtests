@@ -200,13 +200,23 @@ end
 def teardown_cluster_existing(pkg_in, num_items, nodes, vbuckets, val_size, opts)
   return if nodes <= 1
 
+  hosts = opts['cluster.hosts'].split(',')
+  user  = opts['cluster.user']
+
   pkg      = pkg_in
   pkg      = pkg.split('/')[-1] # Ex: 'couchbase-server-community_x86_64_2.0.0r-289-gc0dbb43.rpm'
   pkg_base = pkg.split('-')[0]  # Ex: 'couchbase'
   pkg_url  = "#{opts['cluster.package-url-base']}/#{pkg}"
 
-  run "#{$ssh} #{user}@#{host} sudo killall -9 memcached"
-  run "#{$ssh} #{user}@#{host} sudo /etc/init.d/#{pkg_base}-server stop"
+  i = 1
+  while i < nodes
+    host = hosts[i - 1]
+
+    run "#{$ssh} #{user}@#{host} sudo killall -9 memcached"
+    run "#{$ssh} #{user}@#{host} sudo /etc/init.d/#{pkg_base}-server stop"
+
+    i = i + 1
+  end
 end
 
 # ------------------------------------------
