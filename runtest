@@ -54,17 +54,17 @@ end
 
 step("preparing... #{$test_name}")
 
-`killall -9 memcached || true`
+`sudo killall -9 memcached || true`
 
 ['couchbase', 'membase'].each do |x|
-  `/etc/init.d/#{x}-server stop || true`
-  `rpm -e #{x}-server || true`
-  `rm -rf /opt/#{x}/`
+  `sudo /etc/init.d/#{x}-server stop || true`
+  `sudo rpm -e #{x}-server || true`
+  `sudo rm -rf /opt/#{x}/`
 end
 
 step("installing...")
 
-`rpm -i #{$pkg}`
+`sudo rpm -i #{$pkg}`
 
 sleep 5
 sleep $extra_sleep.to_i if $extra_sleep
@@ -72,7 +72,7 @@ sleep $extra_sleep.to_i if $extra_sleep
 `rm -f after-install`
 `wget https://raw.github.com/couchbaselabs/rampup/master/after-install`
 `chmod a+x after-install`
-`./after-install #{$num_vbuckets}`
+`sudo ./after-install #{$num_vbuckets}`
 
 step("configuring...")
 
@@ -117,10 +117,10 @@ step("view-accessing...",
      "./rampup-view.rb 127.0.0.1 10000 >> #{$out_file}")
 
 step("stopping...",
-     "/etc/init.d/#{$pkg_base}-server stop")
+     "sudo /etc/init.d/#{$pkg_base}-server stop")
 
 step("restarting...",
-     "/etc/init.d/#{$pkg_base}-server start")
+     "sudo /etc/init.d/#{$pkg_base}-server start")
 
 step("warming...")
 
