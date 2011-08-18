@@ -14,8 +14,31 @@ body {
   font-family: Helvetica;
   margin: 10px 20px;
 }
-#docs {
+#steps {
   margin-top: 10px;
+}
+#steps .dimension, #steps .dimension div {
+  display: inline;
+  position: relative;
+  font-size: 6pt;
+  color: #555;
+}
+#steps .elapsed {
+  display: block;
+  whitespace: nowrap;
+  color: #999;
+  font-size: 10pt;
+}
+#steps .elapsed div {
+  display: inline;
+  position relative;
+  color: white;
+}
+#steps .elapsed div .bar {
+  display: block;
+  position: absolute;
+  height: 5px;
+  border: 1px solid red;
 }
 #keys {
   margin-top: 10px;
@@ -31,7 +54,7 @@ body {
 </style>
 <body>
 <div id="keys">...keys...</div>
-<div id="docs">...docs...</div>
+<div id="steps">...steps...</div>
 </body>
 <script>
 var dbName = window.location.pathname.split('/')[1];
@@ -56,7 +79,9 @@ $(document).ready(function() {
   function populateDocs(docs) {
     var dimensions = {}; // Unique keys (dimensions) in docs.
 
-    var hdocs = $.map(docs, function(doc) {
+    var steps = [];
+
+    $.map(docs, function(doc) {
       for (var key in doc) {
          if (key[0] != '_' && key != 'details') {
            var d = dimensions[key] = dimensions[key] || {};
@@ -65,10 +90,16 @@ $(document).ready(function() {
          }
       }
 
-      return docToHTML(doc);
+      for (var i in doc.details) {
+        var step = doc.details[i];
+        step.doc = doc;
+        steps[steps.length] = step;
+      }
     });
 
-    var hkeys = $.map(mapKeys(dimensions), function(key) {
+    var dimensionKeys = mapKeys(dimensions);
+
+    var hkeys = $.map(dimensionKeys, function(key) {
       var vals = [];
       for (var v in dimensions[key]) {
         vals[vals.length] = v;
@@ -85,23 +116,71 @@ $(document).ready(function() {
              "</label>";
     });
 
-    $('#docs').html("<div>" +
-                    hdocs.join("</div><div>") +
-                    "</div>");
+    steps.sort(function(x, y) {
+      return x.step - y.step;
+    });
+
+    hsteps = $.map(steps, function(step) {
+      return stepToHTML(step);
+    });
+
     $('#keys').html("<div>" +
                     hkeys.join("</div><div>") +
                     "</div>");
-  }
+    $('#steps').html("<div>" +
+                     hsteps.join("</div><div>") +
+                     "</div>");
 
-  function docToHTML(doc) {
-    var h = [doc.filename];
-    for (var i in doc.details) {
-      var step = doc.details[i];
+    function stepToHTML(step) {
+      var h = ['<div class="step">'];
+
+      h[h.length] = '<div class="dimension dimension_step">step';
+      h[h.length] = '<div>';
+      h[h.length] = step.step;
+      h[h.length] = "</div>";
+      h[h.length] = "</div>";
+
+      h[h.length] = '<div class="dimension dimension_label">label';
+      h[h.length] = '<div>';
       h[h.length] = step.label;
-      h[h.length] = step.elapsed;
-    }
+      h[h.length] = "</div>";
+      h[h.length] = "</div>";
 
-    return h.join(' ');
+      $.map(dimensionKeys, function(key) {
+        if (key != 'filename') {
+          h[h.length] = '<div class="dimension dimension_' + key + '">';
+          h[h.length] = key
+          h[h.length] = '<div>';
+          h[h.length] = step.doc[key];
+          h[h.length] = "</div>";
+          h[h.length] = "</div>";
+        }
+      });
+
+      h[h.length] = '<div class="elapsed">elapsed';
+      h[h.length] = '<div>';
+      h[h.length] = step.elapsed;
+
+      var bar = step.elapsed;
+      if (bar > 1) {
+        if (bar < 100) {
+          bar = bar * 100;
+        } else {
+          while (bar > 1000) {
+            bar = bar / 1000;
+          }
+        }
+      }
+      bar = Math.floor(bar);
+
+      h[h.length] = '<div class="bar" style="width:' + bar + 'px;">&nbsp;</div>';
+      h[h.length] = "</div>";
+      h[h.length] = "</div>";
+
+      h[h.length] = "</div>";
+
+      return h.join(' ');
+    }
   }
 });
 
