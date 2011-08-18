@@ -1,29 +1,121 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <title>My New CouchApp</title>
-    <link rel="stylesheet" href="style/main.css" type="text/css">
-  </head>
-  <body>
-    <div id="account"></div>
+<head>
+  <title>ram pup</title>
+  <link rel="stylesheet" href="style/main.css" type="text/css">
+  <script src="/_utils/script/json2.js"></script>
+  <script src="/_utils/script/jquery.js"></script>
+  <script src="/_utils/script/jquery.couch.js"></script>
+</head>
+<style>
+body {
+  background-color: black;
+  color: white;
+  font-family: Helvetica;
+  margin: 10px 20px;
+}
+#docs {
+  margin-top: 10px;
+}
+#keys {
+  margin-top: 10px;
+}
+#keys div label {
+  position: relative;
+}
+#keys div select {
+  position: absolute;
+  left: 10em;
+}
 
-    <h1>Generated CouchApp</h1>
+</style>
+<body>
+<div id="keys">...keys...</div>
+<div id="docs">...docs...</div>
+</body>
+<script>
+var dbName = window.location.pathname.split('/')[1];
 
-    <div id="profile"></div>
-    <div id="items"></div>
+$(document).ready(function() {
+  var db = $.couch.db(dbName);
 
-    <div id="sidebar">
-      <p>Edit welcome message.</p>
-      <p>Ideas: You could easily turn this into a photo sharing app, or a grocery list, or a chat room.</p>
-    </div>
-  </body>
-  <script src="vendor/couchapp/loader.js"></script>
-  <script type="text/javascript" charset="utf-8">
-    $.couch.app(function(app) {
-      $("#account").evently("account", app);
-      $("#profile").evently("profile", app);
-      $.evently.connect("#account","#profile", ["loggedIn","loggedOut"]);
-      $("#items").evently("items", app);
+  populate();
+
+  function populate() {
+    db.allDocs({
+      include_docs: 'true',
+      start_key: '"_~"', // Don't want design docs.
+      success: function(res) {
+        populateDocs($.map(res.rows || [], function(row) {
+          return row.doc;
+        }));
+      }
     });
-  </script>
+  }
+
+  function populateDocs(docs) {
+    var dimensions = {}; // Unique keys (dimensions) in docs.
+
+    var hdocs = $.map(docs, function(doc) {
+      for (var key in doc) {
+         if (key[0] != '_' && key != 'details') {
+           var d = dimensions[key] = dimensions[key] || {};
+           var v = doc[key];
+           d[v] = true;
+         }
+      }
+
+      return docToHTML(doc);
+    });
+
+    var hkeys = $.map(mapKeys(dimensions), function(key) {
+      var vals = [];
+      for (var v in dimensions[key]) {
+        vals[vals.length] = v;
+      }
+
+      var options =
+        "<option>(all)</option>" +
+        "<option>" +
+        vals.sort().join("</option><option>") +
+        "</option>";
+
+      return "<label>" + key.split('_').join(' ') +
+             '<select>' + options + "</select>" +
+             "</label>";
+    });
+
+    $('#docs').html("<div>" +
+                    hdocs.join("</div><div>") +
+                    "</div>");
+    $('#keys').html("<div>" +
+                    hkeys.join("</div><div>") +
+                    "</div>");
+  }
+
+  function docToHTML(doc) {
+    var h = [doc.filename];
+    for (var i in doc.details) {
+      var step = doc.details[i];
+      h[h.length] = step.label;
+      h[h.length] = step.elapsed;
+    }
+
+    return h.join(' ');
+  }
+});
+
+function escape(s) {
+  return s.replace("&", "&amp;")
+          .replace("<", "&lt;")
+          .replace(">", "&gt;")
+          .replace("\n", "<br/>");
+}
+
+function mapKeys(m) {
+  var h = [];
+  for (var k in m) { h[h.length] = k; }
+  return h.sort();
+}
+</script>
 </html>
