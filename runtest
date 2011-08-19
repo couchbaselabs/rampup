@@ -98,7 +98,7 @@ else
     --bucket-ramsize=#{$ram_quota} --bucket-replica=#{$replica_count}"
 end
 
-sleep 5
+sleep 15
 sleep $extra_sleep.to_i if $extra_sleep
 
 run "curl -vX PUT http://127.0.0.1:5984/default/_design/rampup -d @rampup.json"
