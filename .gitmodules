@@ -1,0 +1,6 @@
+[submodule "deps/bson"]
+	path = deps/bson
+	url = git://github.com/TonyGen/bson-erlang.git
+[submodule "deps/mongodb"]
+	path = deps/mongodb
+	url = git://github.com/TonyGen/mongodb-erlang.git
