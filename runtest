@@ -103,14 +103,14 @@ sleep $extra_sleep.to_i if $extra_sleep
 
 run "curl -vX PUT http://127.0.0.1:5984/default/_design/rampup -d @rampup.json"
 
-step("loading-membase...", <<EOF
+step("loading-docs...", <<EOF
      DRIVE_HOST=127.0.0.1 RATIO_SETS=1.0 RATIO_CREATES=1.0 MAX_CREATES=#{$num_items} EXIT_AFTER_CREATES=1 MIN_VALUE_SIZE=#{$val_size} \
        /opt/#{$pkg_base}/bin/erl -pa . /opt/#{$pkg_base}/lib/ns_server/erlang/lib/ns_server-*/ebin \
        -eval 'rampup:drive_test(), init:stop().'
 EOF
 )
 
-step("using-membase...", <<EOF
+step("reading-docs...", <<EOF
      DRIVE_HOST=127.0.0.1 RATIO_SETS=0.0 MAX_OPS=10000 \
        /opt/#{$pkg_base}/bin/erl -pa . /opt/#{$pkg_base}/lib/ns_server/erlang/lib/ns_server-*/ebin \
        -eval 'rampup:drive_test(), init:stop().'
