@@ -195,13 +195,13 @@ step("stopping...",
 
 step("restarting...")
 
-start_mongo(100)
+start_mongo()
 
 # ------------------------------------
 
 step("warming...")
 
-coll = connect().db($dbName).collection($collName)
+coll = connect(100).db($dbName).collection($collName)
 
 coll.find({"curr" => 0})
 
