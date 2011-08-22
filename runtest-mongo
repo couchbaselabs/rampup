@@ -189,7 +189,7 @@ end
 # ------------------------------------
 
 step("stopping...",
-     "killall -SIGINT mongod && killall -9 mongos")
+     "killall -9 mongos && killall -SIGINT mongod")
 
 # ------------------------------------
 
