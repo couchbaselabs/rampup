@@ -1,0 +1,209 @@
+#!/usr/bin/env ruby
+
+# sudo gem install mongo
+# sudo gem install bson
+# sudo gem install bson_ext
+# sudo gem install SystemTimer
+
+require 'rubygems'
+require 'mongo'
+
+OH = BSON::OrderedHash
+
+if ARGV.length < 4
+  print("runtest TEST_NAME MONGO RAM_QUOTA REPLICA_COUNT NUM_ITEMS NUM_VBUCKETS VAL_SIZE [SHARDS] [EXTRA_SLEEP]\n")
+  exit(-1)
+end
+
+print "runtest #{ARGV.join(' ')}\n"
+
+$test_name     = ARGV[0]
+$mongo         = ARGV[1] # Might be a url (http://fastdl.mongodb.org/linux/mongodb-linux-x86_64-1.8.3.tgz)
+                         # or part of a url, like: mongodb-linux-x86_64-1.8.3
+$mongo_base    = $mongo.split('/')[-1].sub('.tgz', '') # Ex: 'mongodb-linux-x86_64-1.8.3'
+$ram_quota     = ARGV[2]
+$replica_count = ARGV[3]
+$num_items     = (ARGV[4] || "1000").to_i
+$num_vbuckets  = ARGV[5]
+$val_size      = (ARGV[6] || "1000").to_i
+$shards        = (ARGV[7] || "").split(',')
+$extra_sleep   = ARGV[8]
+
+$sharded = true
+
+$host     = "localhost"
+$dbName   = "test"
+$collName = "test"
+$safe     = true
+
+# ------------------------------------
+
+def run(cmd, use_system=false)
+  print("#{cmd}\n")
+  if use_system
+    system(cmd)
+  else
+    `#{cmd}`
+  end
+end
+
+run "mkdir -p out"
+$out_file = "out/#{$test_name}"
+run "rm -f #{$out_file}"
+
+$time_curr = $time_start = Time.now
+$time_prev = nil
+$mesg_prev = nil
+$step_num  = 0
+
+def step(mesg, cmd=nil, elapsed=nil)
+  $time_curr = Time.now
+
+  if $time_prev
+    elapsed = $time_curr - $time_prev unless elapsed
+    print "# #{$step_num}. #{$mesg_prev} done. elapsed: #{elapsed}\n"
+    `echo "# #{$step_num}. #{$mesg_prev} done. elapsed: #{elapsed}" >> #{$out_file}`
+  end
+
+  $step_num  = $step_num + 1
+
+  print "# #{$step_num}. #{mesg} #{$time_curr.strftime('%Y%m%d-%H%M%S')}\n"
+  `echo "# #{$step_num}. #{mesg} #{$time_curr.strftime('%Y%m%d-%H%M%S')}" >> #{$out_file}`
+
+  $time_prev = $time_curr
+  $mesg_prev = mesg
+
+  time(cmd) if cmd
+end
+
+def time(cmd)
+  system("top -u #{$pkg_base} | egrep beam.smp > /tmp/top.out &")
+
+  run cmd
+
+  `killall top`
+  `tail -n 50 /tmp/top.out | head -n 10 >> #{$out_file}`
+end
+
+# ------------------------------------
+
+def start_mongo()
+  if $sharded
+    run("nohup #{$mongo_base}/bin/mongod --dbpath #{$db_path} --port 20000 --rest &", true)
+    sleep(2)
+    run("nohup #{$mongo_base}/bin/mongos --configdb localhost:20000 &", true)
+  else
+    run("nohup #{$mongo_base}/bin/mongod --dbpath #{$db_path} &", true)
+  end
+  sleep(2)
+end
+
+def connect(max_tries = 10)
+  i = 0
+  while i < max_tries
+    begin
+      print "connecting... (attempt #{i})\n"
+      conn = Mongo::Connection.new($host, 27017, :safe => $safe)
+      print "connecting... (attempt #{i}) done.\n"
+      return conn
+    rescue
+    end
+    i = i + 1
+    sleep i
+  end
+  return nil
+end
+
+# ------------------------------------
+
+step("preparing... #{$test_name}")
+
+run "killall -9 mongod || true"
+run "killall -9 mongos || true"
+
+run "rm -rf #{$mongo_base}" # Ex: mongodb-linux-x86_64-1.8.3
+
+unless File.exists?("#{$mongo_base}.tgz")
+  run "wget -O #{$mongo_base}.tgz http://fastdl.mongodb.org/linux/#{$mongo_base}.tgz"
+end
+
+# ------------------------------------
+
+step("installing...")
+
+run "tar -xzvf #{$mongo_base}.tgz"
+
+$db_path = "#{$mongo_base}/data-#{$test_name}"
+
+# ------------------------------------
+
+step("configuring...")
+
+run "mkdir -p #{$db_path}"
+
+start_mongo()
+
+if $sharded
+  db = connect().db("admin")
+
+  db.command(OH["addshard", "localhost:20000", "allowLocal", true])
+
+  $shards.each do |shard|
+    db.command(OH["addshard", shard, "allowLocal", true])
+  end
+
+  db.command(OH["enablesharding", $dbName])
+  db.command(OH["shardcollection", "#{$dbName}.#{$collName}", "key", {"_id" => 1}])
+end
+
+# Pre-create collection data files.
+#
+coll = connect().db($dbName).collection($collName)
+
+# ------------------------------------
+
+step("loading-docs...")
+
+coll = connect().db($dbName).collection($collName)
+
+(0..$num_items).each do |i|
+  doc = {"name" => "MongoDB",
+         "type" => "database",
+         "curr" => i,
+         "info" => {"x" => 203, "y" => '102'}}
+  coll.insert(doc)
+end
+
+# ------------------------------------
+
+step("reading-docs...")
+
+coll = connect().db($dbName).collection($collName)
+
+(0..$num_items).each do |i|
+  coll.find({"curr" => i})
+end
+
+# ------------------------------------
+
+step("stopping...",
+     "killall -SIGINT mongod && killall -9 mongos")
+
+# ------------------------------------
+
+step("restarting...")
+
+start_mongo()
+
+# ------------------------------------
+
+step("warming...")
+
+coll = connect().db($dbName).collection($collName)
+
+coll.find({"curr" => 0})
+
+# ------------------------------------
+
+step("done...")
+
