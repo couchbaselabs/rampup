@@ -31,6 +31,8 @@ $extra_sleep   = ARGV[8]
 
 $sharded = true
 
+$top_user = "root"
+
 $host     = "localhost"
 $dbName   = "test"
 $collName = "test"
@@ -77,7 +79,7 @@ def step(mesg, cmd=nil, elapsed=nil)
 end
 
 def time(cmd)
-  system("top -u #{$pkg_base} | egrep beam.smp > /tmp/top.out &")
+  system("top -u #{$top_user} | egrep beam.smp > /tmp/top.out &")
 
   run cmd
 
@@ -109,7 +111,7 @@ def connect(max_tries = 10)
     rescue
     end
     i = i + 1
-    sleep i
+    sleep([5, i].min)
   end
   return nil
 end
@@ -193,7 +195,7 @@ step("stopping...",
 
 step("restarting...")
 
-start_mongo()
+start_mongo(100)
 
 # ------------------------------------
 
