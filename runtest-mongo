@@ -79,7 +79,7 @@ def step(mesg, cmd=nil, elapsed=nil)
 end
 
 def time(cmd)
-  system("top -u #{$top_user} | egrep beam.smp > /tmp/top.out &")
+  system("top -U #{$top_user} | egrep beam.smp > /tmp/top.out &")
 
   run cmd
 
