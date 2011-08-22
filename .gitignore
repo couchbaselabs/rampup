@@ -2,4 +2,4 @@ out
 out-*
 *.out
 erl_crash.dump
-
+*.tgz
