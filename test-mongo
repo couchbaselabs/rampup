@@ -1,0 +1,44 @@
+#!/usr/bin/env ruby
+
+# sudo gem install mongo
+# sudo gem install bson
+# sudo gem install bson_ext
+# sudo gem install SystemTimer
+
+require 'rubygems'
+require 'mongo'
+
+$mongoDir = ARGV[0]
+$host     = ARGV[1] || "localhost"
+$dbName   = ARGV[2] || "test"
+$collName = ARGV[3] || "foo"
+$op       = ARGV[4] || "load" || "gets" || "query"
+$num      = (ARGV[5] || "1000").to_i
+$safe     = (ARGV[6] || "safe") == "safe"
+
+print "test-mongo #{$mongoDir} #{$host} #{$dbName} #{$collName} #{$op} #{$num} #{$safe}\n"
+
+# `killall mongos`
+# `killall mongod`
+
+# `rm -rf #{$mongoDir}/test-data/*`
+# `mkdir -p #{$mongoDir}/test-data`
+
+conn = Mongo::Connection.new($host, 27017, :safe => $safe)
+db   = conn.db($dbName)
+coll = db.collection($collName)
+
+if $op == "load"
+  (0..$num).each do |i|
+    doc = {"name" => "MongoDB",
+           "type" => "database",
+           "curr" => i,
+           "info" => {"x" => 203, "y" => '102'}}
+    id = coll.insert(doc)
+    # p db.get_last_error()
+  end
+  exit(0)
+end
+
+(0..$num).each do |i|
+end
