@@ -1,0 +1,176 @@
+#!/usr/bin/env ruby
+
+require 'digest/md5'
+
+$cfg_defaults = {
+    :prefix => "",           # Prefix for every item key.
+    :target => "ConnNeeded", # Store-specific connection string.
+    :max_ops => 0,           # Max number of requests (sets and gets) before exiting.
+    :max_creates => 10000,   # Total items to create.
+    :min_value_size => 1000, # Minimal value size in bytes during SET's.
+    :ratio_sets => 0.1,      # Fraction of requests that should be SET's.
+    :ratio_creates => 0.1,   # Fraction of SET's that should create new items.
+    :ratio_misses => 0.05,   # Fraction of GET's that should miss.
+    :ratio_hot => 0.2,       # Fraction of items to have as a hot item subset.
+    :ratio_hot_sets => 0.95, # Fraction of SET's that hit the hot item subset.
+    :ratio_hot_gets => 0.95, # Fraction of GET's that hit the hot item subset.
+    :progress_ops => 10000,  # Report progress after this many ops.
+    :num_items_start => 0,   # Assume there are already this many items.
+    :exit_after_creates => 0 # Exit after max_creates is reached.
+}
+
+$cur_defaults = {
+  :num_items   => 0, # Number of items known to be in the bucket.
+  :num_sets    => 0,
+  :num_creates => 0, # Number of sets that were creates.
+  :num_gets    => 0
+}
+
+# ----------------------------------------------------------------
+
+class Cfg
+  $cfg_defaults.each_pair {|k, v| attr_accessor(k) }
+end
+
+class Cur
+  $cur_defaults.each_pair {|k, v| attr_accessor(k) }
+end
+
+class Store
+  def command(cmd, key, flag, data, key_str)
+    print("#{cmd} #{key} #{key_str} #{flag} #{data}\n")
+  end
+end
+
+# ----------------------------------------------------------------
+
+cfg = Cfg.new
+cur = Cur.new
+
+[[cfg, $cfg_defaults],
+ [cur, $cur_defaults]].each do |obj, defaults|
+  defaults.each_pair {|k, v| obj.send((k.to_s + '=').to_sym, v) }
+  ARGV.each do |kv|
+    k, v = kv.split('=')
+    unless defaults[k.to_sym].nil?
+      v = v.to_f if v == v.to_f.to_s
+      v = v.to_i if v == v.to_i.to_s
+      obj.send((k + '=').to_sym, v)
+    end
+  end
+end
+
+# ----------------------------------------------------------------
+
+def run(cfg, cur, store)
+  while true
+    num_ops = cur.num_gets + cur.num_sets
+
+    return "max_ops-reached" if (cfg.max_ops > 0 and
+                                 cfg.max_ops <= num_ops)
+
+    return "max_creates-reached" if (cfg.exit_after_creates > 0 and
+                                     cfg.max_creates > 0 and
+                                     cfg.max_creates <= cur.num_creates)
+
+    req_cmd, req_key, req_flag, req_data,
+      expect_status, expect_key, expect_ext, expect_data =
+        next_cmd(cfg, cur)
+
+    cmd_beg = Time.new
+
+    res_status, res_key, res_ext, res_data =
+      store.command(req_cmd, req_key, req_flag, req_data, prepare_key(cfg.prefix, req_key))
+
+    cmd_end = Time.new
+    cmd_amt = cmd_end - cmd_beg
+
+    expect_key = prepare_key(cfg.prefix, expect_key)
+  end
+end
+
+def next_cmd(cfg, cur)
+  # This function modifies cur.
+  #
+  num_items = cur.num_items
+  num_gets  = cur.num_gets
+  num_sets  = cur.num_sets
+
+  num_sets_pos = 1
+  num_sets_pos = num_sets if num_sets > 1
+
+  num_ops = num_gets + num_sets
+  num_ops_pos = 1
+  num_ops_pos = num_ops if num_ops > 1
+
+  do_set = cfg.ratio_sets > num_sets.to_f / num_ops_pos
+  if do_set
+    # SET...
+    cur.num_sets += 1
+    do_set_create = (cfg.max_creates > num_items and
+                     cfg.ratio_creates > 0 and
+                     cfg.ratio_creates > num_items.to_f / num_sets_pos)
+    if do_set_create
+      # Create...
+      cur.num_items += 1
+      cur.num_creates += 1
+      return :set, num_items, 0, prepare_data(num_items, cfg.min_value_size),
+             :success, nil, nil, nil
+    else
+      # Update...
+      key = choose_key(num_items, cfg.ratio_hot, cfg.ratio_hot_sets,
+                       num_sets)
+      return :set, key, 0, prepare_data(key, cfg.min_value_size),
+             :success, nil, nil, nil
+    end
+  else
+    # GET...
+    cur.num_gets += 1
+    do_get_hit = (cfg.ratio_misses * 100) < num_gets.modulo(100)
+    if do_get_hit
+      key = choose_key(num_items, cfg.ratio_hot, cfg.ratio_hot_gets,
+                       num_gets)
+      return :get, key, 0, nil,
+             :success, "", nil, prepare_data(key, cfg.min_value_size)
+    else
+      return :get, -1, 0, nil,
+             :missing, "", "", "Not found"
+    end
+  end
+end
+
+# ----------------------------------------------------------------
+
+def choose_key(num_items, ratio_hot, ratio_hot_choice, num_ops)
+  hit_hot_range = (ratio_hot_choice * 100) > num_ops.modulo(100)
+  if hit_hot_range
+    base = 0
+    range = (ratio_hot * num_items).floor
+  else
+    base = (ratio_hot * num_items).floor
+    range = ((1.0 - ratio_hot) * num_items).floor
+  end
+  range = 1 if range < 1
+  return base + num_ops.modulo(range)
+end
+
+def prepare_key(prefix, key_num)
+  key_hash = Digest::MD5.hexdigest(key_num.to_s)[0..9]
+  return "#{prefix}-#{key_hash}" if prefix and prefix.length > 0
+  return "#{key_hash}"
+end
+
+def prepare_data(key, min_value_size)
+  return "{\"key\":\"#{key}\", \"body\":\"#{'x' * min_value_size}\"}"
+end
+
+# ----------------------------------------------------------------
+
+p cfg
+p cur
+
+# exit(0)
+
+store = Store.new
+
+run(cfg, cur, store)
