@@ -1,6 +1,15 @@
 #!/usr/bin/env ruby
 
 require 'digest/md5'
+require 'rubygems'
+
+# sudo gem install mongo
+# sudo gem install bson
+# sudo gem install bson_ext
+# sudo gem install SystemTimer
+
+require 'mongo'
+require 'memcache'
 
 $cfg_defaults = {
     :prefix => "",           # Prefix for every item key.
@@ -28,6 +37,12 @@ $cur_defaults = {
 
 # ----------------------------------------------------------------
 
+def out(msg)
+  print(msg)
+end
+
+# ----------------------------------------------------------------
+
 class Cfg
   $cfg_defaults.each_pair {|k, v| attr_accessor(k) }
 end
@@ -36,9 +51,59 @@ class Cur
   $cur_defaults.each_pair {|k, v| attr_accessor(k) }
 end
 
+# ----------------------------------------------------------------
+
 class Store
-  def command(cmd, key, flag, data, key_str)
-    print("#{cmd} #{key} #{key_str} #{flag} #{data}\n")
+  def connect(target)
+  end
+
+  def command(cmd, key_num, key_str, data)
+    out("#{cmd} #{key_num} #{key_str} #{data}\n")
+  end
+end
+
+class StoreMemcached < Store
+  def connect(target) # host:port
+    @target = target
+    @conn   = MemCache.new([target])
+  end
+
+  def command(cmd, key_num, key_str, data)
+    case cmd
+    when :get
+      return @conn.get(key_str)
+    when :set
+      return @conn.set(key_str, data)
+    else
+      print("ERROR: unknown StoreMemcached cmd: #{cmd}\n")
+      exit(-1)
+    end
+  end
+end
+
+class StoreMongo < Store
+  def connect(target) # host:port/dbName/collName
+    hp, dbName, collName = target.split('/')
+    @host = (hp.split(':')[0] || 'localhost')
+    @port = (hp.split(':')[1] || '27017').to_i
+    @dbName   = dbName   || 'test'
+    @collName = collName || 'test'
+
+    @conn = Mongo::Connection.new(@host, @port, :safe => true)
+    @db   = conn.db(@dbName)
+    @coll = @db.collection(@collName)
+  end
+
+  def command(cmd, key_num, key_str, data)
+    case cmd
+    when :get
+      return @coll.get(key_str)
+    when :set
+      return @coll.set(key_str, data)
+    else
+      print("ERROR: unknown StoreMongo cmd: #{cmd}\n")
+      exit(-1)
+    end
   end
 end
 
@@ -50,7 +115,7 @@ cur = Cur.new
 [[cfg, $cfg_defaults],
  [cur, $cur_defaults]].each do |obj, defaults|
   defaults.each_pair {|k, v| obj.send((k.to_s + '=').to_sym, v) }
-  ARGV.each do |kv|
+  (ARGV[1..-1] || []).each do |kv|
     k, v = kv.split('=')
     unless defaults[k.to_sym].nil?
       v = v.to_f if v == v.to_f.to_s
@@ -73,19 +138,17 @@ def run(cfg, cur, store)
                                      cfg.max_creates > 0 and
                                      cfg.max_creates <= cur.num_creates)
 
-    req_cmd, req_key, req_flag, req_data,
-      expect_status, expect_key, expect_ext, expect_data =
+    req_cmd, req_key_num, req_key_str, req_data,
+      expect_status, expect_data =
         next_cmd(cfg, cur)
 
     cmd_beg = Time.new
 
-    res_status, res_key, res_ext, res_data =
-      store.command(req_cmd, req_key, req_flag, req_data, prepare_key(cfg.prefix, req_key))
+    res_status, res_data =
+      store.command(req_cmd, req_key_num, req_key_str, req_data)
 
     cmd_end = Time.new
     cmd_amt = cmd_end - cmd_beg
-
-    expect_key = prepare_key(cfg.prefix, expect_key)
   end
 end
 
@@ -107,6 +170,7 @@ def next_cmd(cfg, cur)
   if do_set
     # SET...
     cur.num_sets += 1
+
     do_set_create = (cfg.max_creates > num_items and
                      cfg.ratio_creates > 0 and
                      cfg.ratio_creates > num_items.to_f / num_sets_pos)
@@ -114,63 +178,80 @@ def next_cmd(cfg, cur)
       # Create...
       cur.num_items += 1
       cur.num_creates += 1
-      return :set, num_items, 0, prepare_data(num_items, cfg.min_value_size),
-             :success, nil, nil, nil
+      key_num = num_items
     else
       # Update...
-      key = choose_key(num_items, cfg.ratio_hot, cfg.ratio_hot_sets,
-                       num_sets)
-      return :set, key, 0, prepare_data(key, cfg.min_value_size),
-             :success, nil, nil, nil
+      key_num = choose_key_num(num_items, cfg.ratio_hot, cfg.ratio_hot_sets, num_sets)
     end
+
+    key_str = prepare_key(key_num, cfg.prefix)
+    itm_val = prepare_data(key_num, key_str, cfg.min_value_size)
+    return :set, key_num, key_str, itm_val,
+           :success, nil
   else
     # GET...
     cur.num_gets += 1
+
     do_get_hit = (cfg.ratio_misses * 100) < num_gets.modulo(100)
     if do_get_hit
-      key = choose_key(num_items, cfg.ratio_hot, cfg.ratio_hot_gets,
-                       num_gets)
-      return :get, key, 0, nil,
-             :success, "", nil, prepare_data(key, cfg.min_value_size)
+      key_num = choose_key_num(num_items, cfg.ratio_hot, cfg.ratio_hot_gets, num_gets)
+      key_str = prepare_key(key_num, cfg.prefix)
+      itm_val = prepare_data(key_num, key_str, cfg.min_value_size)
+      return :get, key_num, key_str, nil,
+             :success, itm_val
     else
-      return :get, -1, 0, nil,
-             :missing, "", "", "Not found"
+      return :get, -1, prepare_key(-1, cfg.prefix), nil,
+             :missing, "Not found"
     end
   end
 end
 
 # ----------------------------------------------------------------
 
-def choose_key(num_items, ratio_hot, ratio_hot_choice, num_ops)
+def choose_key_num(num_items, ratio_hot, ratio_hot_choice, num_ops)
   hit_hot_range = (ratio_hot_choice * 100) > num_ops.modulo(100)
   if hit_hot_range
-    base = 0
+    base  = 0
     range = (ratio_hot * num_items).floor
   else
-    base = (ratio_hot * num_items).floor
+    base  = (ratio_hot * num_items).floor
     range = ((1.0 - ratio_hot) * num_items).floor
   end
   range = 1 if range < 1
   return base + num_ops.modulo(range)
 end
 
-def prepare_key(prefix, key_num)
-  key_hash = Digest::MD5.hexdigest(key_num.to_s)[0..9]
+$collisions = {}
+
+def prepare_key(key_num, prefix)
+  key_hash = Digest::MD5.hexdigest(key_num.to_s)[0..15]
+
+  if false
+    prev = $collisions[key_hash]
+    if prev and prev != key_num
+      print("collision: #{key_num} #{prev}\n")
+      exit(-1)
+    end
+    $collisions[key_hash] = key_num
+  end
+
   return "#{prefix}-#{key_hash}" if prefix and prefix.length > 0
   return "#{key_hash}"
 end
 
-def prepare_data(key, min_value_size)
-  return "{\"key\":\"#{key}\", \"body\":\"#{'x' * min_value_size}\"}"
+$suffix = "\"body\":\"#{'x' * cfg.min_value_size}\"}"
+
+def prepare_data(key_num, key_str, min_value_size)
+  return "{\"key_num\":#{key_num},"\
+          "\"key_str\":\"#{key_str}\"," \
+          "\"mid\":\"#{key_str[-4..-2]}\"," \
+          "\"last\":\"#{key_str[-1..-1]}\"," +
+         $suffix
 end
 
 # ----------------------------------------------------------------
 
-p cfg
-p cur
-
-# exit(0)
-
-store = Store.new
+store = StoreMemcached.new
+store.connect(cfg.target)
 
 run(cfg, cur, store)

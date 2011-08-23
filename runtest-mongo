@@ -126,7 +126,11 @@ run "killall -9 mongos || true"
 run "rm -rf #{$mongo_base}" # Ex: mongodb-linux-x86_64-1.8.3
 
 unless File.exists?("#{$mongo_base}.tgz")
-  run "wget -O #{$mongo_base}.tgz http://fastdl.mongodb.org/linux/#{$mongo_base}.tgz"
+  if $mongo.start_with?('http://')
+    run "wget -O #{$mongo_base}.tgz #{$mongo}"
+  else
+    run "wget -O #{$mongo_base}.tgz http://fastdl.mongodb.org/linux/#{$mongo_base}.tgz"
+  end
 end
 
 # ------------------------------------
