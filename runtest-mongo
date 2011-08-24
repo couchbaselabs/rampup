@@ -196,6 +196,16 @@ step("reading-docs...",
 
 # ------------------------------------
 
+step("view-building...",
+     "#{$mongo_base}/bin/mongo 127.0.0.1:27017/test ensureIndex-last.js")
+
+# ------------------------------------
+
+step("view-accessing...",
+     "./do-mongo-view 127.0.0.1 10000 >> #{$out_file}")
+
+# ------------------------------------
+
 step("stopping...",
      "killall -9 mongos && killall -SIGINT mongod")
 
