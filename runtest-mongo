@@ -31,12 +31,12 @@ $extra_sleep   = ARGV[8]
 
 $sharded = true
 
-$top_user = "root"
-
 $host     = "localhost"
 $dbName   = "test"
 $collName = "test"
 $safe     = true
+
+$top_user = "root"
 
 # ------------------------------------
 
@@ -168,19 +168,19 @@ coll = connect().db($dbName).collection($collName)
 
 # ------------------------------------
 
-step("loading-docs...")
-
-run("./rampup-client mongo 127.0.0.1:27017" \
-    " ratio_sets=1.0 ratio_creates=1.0" \
-    " max_creates=#{$num_items}")
+step("loading-docs...",
+     "./rampup-client mongo 127.0.0.1:27017" \
+     " ratio_sets=1.0 ratio_creates=1.0" \
+     " min_value_size=#{val_size}" \
+     " max_creates=#{$num_items} exit_after_creates=1")
 
 # ------------------------------------
 
-step("reading-docs...")
-
-run("./rampup-client mongo 127.0.0.1:27017" \
-    " ratio_sets=0.0" \
-    " max_ops=#{$num_items}")
+step("reading-docs...",
+     "./rampup-client mongo 127.0.0.1:27017" \
+     " ratio_sets=0.0" \
+     " min_value_size=#{val_size}" \
+     " max_ops=#{$num_items}")
 
 # ------------------------------------
 

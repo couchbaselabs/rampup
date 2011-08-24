@@ -18,9 +18,17 @@ $val_size      = ARGV[6] || "1000"
 $join_url      = ARGV[7]
 $extra_sleep   = ARGV[8]
 
-def run(cmd)
+$top_user = "root"
+
+# ------------------------------------
+
+def run(cmd, use_system=false)
   print("#{cmd}\n")
-  `#{cmd}`
+  if use_system
+    system(cmd)
+  else
+    `#{cmd}`
+  end
 end
 
 run "mkdir -p out"
@@ -37,11 +45,13 @@ def step(mesg, cmd=nil, elapsed=nil)
 
   if $time_prev
     elapsed = $time_curr - $time_prev unless elapsed
+    print "# #{$step_num}. #{$mesg_prev} done. elapsed: #{elapsed}\n"
     `echo "# #{$step_num}. #{$mesg_prev} done. elapsed: #{elapsed}" >> #{$out_file}`
   end
 
   $step_num  = $step_num + 1
 
+  print "# #{$step_num}. #{mesg} #{$time_curr.strftime('%Y%m%d-%H%M%S')}\n"
   `echo "# #{$step_num}. #{mesg} #{$time_curr.strftime('%Y%m%d-%H%M%S')}" >> #{$out_file}`
 
   $time_prev = $time_curr
@@ -51,13 +61,15 @@ def step(mesg, cmd=nil, elapsed=nil)
 end
 
 def time(cmd)
-  system("top -u #{$pkg_base} | egrep beam.smp > /tmp/top.out &")
+  system("top -U #{$top_user} | egrep beam.smp > /tmp/top.out &")
 
   run cmd
 
   `killall top`
   `tail -n 50 /tmp/top.out | head -n 10 >> #{$out_file}`
 end
+
+# ------------------------------------
 
 step("preparing... #{$test_name}")
 
@@ -68,6 +80,8 @@ run "sudo killall -9 memcached || true"
   run "sudo rpm -e #{x}-server || true"
   run "sudo rm -rf /opt/#{x}/"
 end
+
+# ------------------------------------
 
 step("installing...")
 
@@ -80,6 +94,8 @@ run "rm -f after-install"
 run "wget https://raw.github.com/couchbaselabs/rampup/master/after-install"
 run "chmod a+x after-install"
 run "sudo ./after-install #{$num_vbuckets}"
+
+# ------------------------------------
 
 step("configuring...")
 
@@ -103,31 +119,43 @@ sleep $extra_sleep.to_i if $extra_sleep
 
 run "curl -vX PUT http://127.0.0.1:5984/default/_design/rampup -d @rampup.json"
 
-step("loading-docs...", <<EOF
-     DRIVE_HOST=127.0.0.1 RATIO_SETS=1.0 RATIO_CREATES=1.0 MAX_CREATES=#{$num_items} EXIT_AFTER_CREATES=1 MIN_VALUE_SIZE=#{$val_size} \
-       /opt/#{$pkg_base}/bin/erl -pa . /opt/#{$pkg_base}/lib/ns_server/erlang/lib/ns_server-*/ebin \
-       -eval 'rampup:drive_test(), init:stop().'
-EOF
-)
+# ------------------------------------
 
-step("reading-docs...", <<EOF
-     DRIVE_HOST=127.0.0.1 RATIO_SETS=0.0 MAX_OPS=10000 \
-       /opt/#{$pkg_base}/bin/erl -pa . /opt/#{$pkg_base}/lib/ns_server/erlang/lib/ns_server-*/ebin \
-       -eval 'rampup:drive_test(), init:stop().'
-EOF
-)
+step("loading-docs...",
+     "./rampup-client memcached 127.0.0.1:11211" \
+     " ratio_sets=1.0 ratio_creates=1.0" \
+     " min_value_size=#{val_size}" \
+     " max_creates=#{$num_items} exit_after_creates=1")
+
+# ------------------------------------
+
+step("reading-docs...",
+     "./rampup-client memcached 127.0.0.1:11211" \
+     " ratio_sets=0.0" \ \
+     " min_value_size=#{val_size}" \
+     " max_ops=#{$num_items}")
+
+# ------------------------------------
 
 step("view-building...",
      "/usr/bin/time -a -o #{$out_file} curl -v http://127.0.0.1:5984/default/_design/rampup/_view/random?limit=10")
 
+# ------------------------------------
+
 step("view-accessing...",
      "./rampup-view.rb 127.0.0.1 10000 >> #{$out_file}")
+
+# ------------------------------------
 
 step("stopping...",
      "sudo /etc/init.d/#{$pkg_base}-server stop")
 
+# ------------------------------------
+
 step("restarting...",
      "sudo /etc/init.d/#{$pkg_base}-server start")
+
+# ------------------------------------
 
 step("warming...")
 
