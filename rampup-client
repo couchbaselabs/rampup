@@ -217,8 +217,7 @@ def run(cfg, cur, store)
 
     cmd_beg = Time.new
 
-    res_status, res_data =
-      store.command(req_cmd, req_key_num, req_key_str, req_data)
+    p store.command(req_cmd, req_key_num, req_key_str, req_data)
 
     cmd_end = Time.new
     cmd_amt = cmd_end - cmd_beg

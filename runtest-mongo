@@ -190,6 +190,7 @@ step("reading-docs...",
      "./rampup-client mongo 127.0.0.1:27017" \
      " ratio_sets=0.0" \
      " min_value_size=#{$val_size}" \
+     " num_items=#{$num_items}" \
      " max_ops=#{$num_items}",
      nil, $num_items)
 
