@@ -132,7 +132,7 @@ step("loading-docs...",
 
 step("reading-docs...",
      "./rampup-client memcached 127.0.0.1:11211" \
-     " ratio_sets=0.0" \ \
+     " ratio_sets=0.0" \
      " min_value_size=#{$val_size}" \
      " max_ops=#{$num_items}")
 
