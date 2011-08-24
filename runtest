@@ -48,7 +48,7 @@ def step(mesg, cmd=nil, elapsed=nil, work=nil)
   if $time_prev
     elapsed = $time_curr - $time_prev unless elapsed
 
-    if $msg_prev and $work_prev and elapsed > 0
+    if $mesg_prev and $work_prev and elapsed > 0
       print "#{mesg_prev} #{$work_prev}, items/sec: #{$work_prev.to_f / elapsed}\n"
       `echo "#{mesg_prev} #{$work_prev}, items/sec: #{$work_prev.to_f / elapsed}" >> #{$out_file}`
     end
