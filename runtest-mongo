@@ -170,24 +170,32 @@ coll = connect().db($dbName).collection($collName)
 
 step("loading-docs...")
 
-coll = connect().db($dbName).collection($collName)
+run "./rampup-client mongo 127.0.0.1:27017"
 
-(0..$num_items).each do |i|
-  doc = {"name" => "MongoDB",
-         "type" => "database",
-         "curr" => i,
-         "info" => {"x" => 203, "y" => '102'}}
-  coll.insert(doc)
+if false
+  coll = connect().db($dbName).collection($collName)
+
+  (0..$num_items).each do |i|
+    doc = {"name" => "MongoDB",
+           "type" => "database",
+           "curr" => i,
+           "info" => {"x" => 203, "y" => '102'}}
+    coll.insert(doc)
+  end
 end
 
 # ------------------------------------
 
 step("reading-docs...")
 
-coll = connect().db($dbName).collection($collName)
+run "./rampup-client mongo 127.0.0.1:27017"
 
-(0..$num_items).each do |i|
-  coll.find({"curr" => i})
+if false
+  coll = connect().db($dbName).collection($collName)
+
+  (0..$num_items).each do |i|
+    coll.find({"curr" => i})
+  end
 end
 
 # ------------------------------------

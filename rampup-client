@@ -8,21 +8,18 @@ require 'rubygems'
 # sudo gem install bson_ext
 # sudo gem install SystemTimer
 
-require 'mongo'
-require 'memcache'
-
 $cfg_defaults = {
-    :prefix => "",           # Prefix for every item key.
-    :max_ops => 0,           # Max number of requests (sets and gets) before exiting.
-    :max_creates => 10000,   # Total items to create.
-    :min_value_size => 1000, # Minimal value size in bytes during SET's.
-    :ratio_sets => 0.1,      # Fraction of requests that should be SET's.
-    :ratio_creates => 0.1,   # Fraction of SET's that should create new items.
-    :ratio_misses => 0.05,   # Fraction of GET's that should miss.
-    :ratio_hot => 0.2,       # Fraction of items to have as a hot item subset.
-    :ratio_hot_sets => 0.95, # Fraction of SET's that hit the hot item subset.
-    :ratio_hot_gets => 0.95, # Fraction of GET's that hit the hot item subset.
-    :exit_after_creates => 0 # Exit after max_creates is reached.
+  :prefix => "",           # Prefix for every item key.
+  :max_ops => 0,           # Max number of requests (sets and gets) before exiting.
+  :max_creates => 10000,   # Total items to create.
+  :min_value_size => 10,   # Minimal value size in bytes during SET's.
+  :ratio_sets => 0.1,      # Fraction of requests that should be SET's.
+  :ratio_creates => 0.1,   # Fraction of SET's that should create new items.
+  :ratio_misses => 0.05,   # Fraction of GET's that should miss.
+  :ratio_hot => 0.2,       # Fraction of items to have as a hot item subset.
+  :ratio_hot_sets => 0.95, # Fraction of SET's that hit the hot item subset.
+  :ratio_hot_gets => 0.95, # Fraction of GET's that hit the hot item subset.
+  :exit_after_creates => 0 # Exit after max_creates is reached.
 }
 
 $cur_defaults = {
@@ -61,6 +58,35 @@ end
 
 # ----------------------------------------------------------------
 
+cfg = Cfg.new
+cur = Cur.new
+
+[[cfg, $cfg_defaults],
+ [cur, $cur_defaults]].each do |obj, defaults|
+  defaults.each_pair {|k, v| obj.send((k.to_s + '=').to_sym, v) }
+  (ARGV[2..-1] || []).each do |kv|
+    k, v = kv.split('=')
+    unless defaults[k.to_sym].nil?
+      v = v.to_f if v == v.to_f.to_s
+      v = v.to_i if v == v.to_i.to_s
+      obj.send((k + '=').to_sym, v)
+    end
+  end
+end
+
+($cfg_defaults.keys).map {|x| x.to_s}.sort.each do |k|
+  print("  #{k.ljust(20)} = #{cfg.send(k.to_sym)}\n")
+end
+
+($cur_defaults.keys).map {|x| x.to_s}.sort.each do |k|
+  print("  #{k.ljust(20)} = #{cur.send(k.to_sym)}\n")
+end
+
+# ----------------------------------------------------------------
+
+$body   = 'x' * cfg.min_value_size
+$suffix = "\"body\":\"#{$body}\"}"
+
 class Store
   def connect(target)
   end
@@ -68,9 +94,19 @@ class Store
   def command(cmd, key_num, key_str, data)
     out("#{cmd} #{key_num} #{key_str} #{data}\n")
   end
+
+  def gen_doc(key_num, key_str, min_value_size)
+    return "{\"_id\":\"#{key_str}\"," \
+            "\"key_num\":#{key_num}," \
+            "\"mid\":\"#{key_str[-4..-2]}\"," \
+            "\"last\":\"#{key_str[-1..-1]}\"," +
+           $suffix
+  end
 end
 
 class StoreMemcached < Store
+  require 'memcache'
+
   def connect(target) # host:port
     @target = target
     @conn   = MemCache.new([target])
@@ -90,6 +126,8 @@ class StoreMemcached < Store
 end
 
 class StoreMongo < Store
+  require 'mongo'
+
   def connect(target) # host:port/dbName/collName
     hp, dbName, collName = target.split('/')
     @host = (hp.split(':')[0] || 'localhost')
@@ -98,38 +136,29 @@ class StoreMongo < Store
     @collName = collName || 'test'
 
     @conn = Mongo::Connection.new(@host, @port, :safe => true)
-    @db   = conn.db(@dbName)
+    @db   = @conn.db(@dbName)
     @coll = @db.collection(@collName)
   end
 
   def command(cmd, key_num, key_str, data)
     case cmd
     when :get
-      return @coll.get(key_str)
+      return @coll.find_one({"_id" => key_str})
     when :set
-      return @coll.set(key_str, data)
+      return @coll.update({"_id" => key_str}, data, {:upsert => true})
     else
       print("ERROR: unknown StoreMongo cmd: #{cmd}\n")
       exit(-1)
     end
   end
-end
 
-# ----------------------------------------------------------------
-
-cfg = Cfg.new
-cur = Cur.new
-
-[[cfg, $cfg_defaults],
- [cur, $cur_defaults]].each do |obj, defaults|
-  defaults.each_pair {|k, v| obj.send((k.to_s + '=').to_sym, v) }
-  (ARGV[2..-1] || []).each do |kv|
-    k, v = kv.split('=')
-    unless defaults[k.to_sym].nil?
-      v = v.to_f if v == v.to_f.to_s
-      v = v.to_i if v == v.to_i.to_s
-      obj.send((k + '=').to_sym, v)
-    end
+  def gen_doc(key_num, key_str, min_value_size)
+    return { "_id"     => key_str,
+             "key_num" => key_num,
+             "mid"     => key_str[-4..-2],
+             "last"    => key_str[-1..-1],
+             "body"    => $body
+           }
   end
 end
 
@@ -148,7 +177,7 @@ def run(cfg, cur, store)
 
     req_cmd, req_key_num, req_key_str, req_data,
       expect_status, expect_data =
-        next_cmd(cfg, cur)
+        next_cmd(cfg, cur, store)
 
     cmd_beg = Time.new
 
@@ -160,7 +189,7 @@ def run(cfg, cur, store)
   end
 end
 
-def next_cmd(cfg, cur)
+def next_cmd(cfg, cur, store)
   # This function modifies cur.
   #
   num_items = cur.num_items
@@ -193,7 +222,7 @@ def next_cmd(cfg, cur)
     end
 
     key_str = prepare_key(key_num, cfg.prefix)
-    itm_val = prepare_data(key_num, key_str, cfg.min_value_size)
+    itm_val = store.gen_doc(key_num, key_str, cfg.min_value_size)
     return :set, key_num, key_str, itm_val,
            :success, nil
   else
@@ -204,7 +233,7 @@ def next_cmd(cfg, cur)
     if do_get_hit
       key_num = choose_key_num(num_items, cfg.ratio_hot, cfg.ratio_hot_gets, num_gets)
       key_str = prepare_key(key_num, cfg.prefix)
-      itm_val = prepare_data(key_num, key_str, cfg.min_value_size)
+      itm_val = store.gen_doc(key_num, key_str, cfg.min_value_size)
       return :get, key_num, key_str, nil,
              :success, itm_val
     else
@@ -245,16 +274,6 @@ def prepare_key(key_num, prefix)
 
   return "#{prefix}-#{key_hash}" if prefix and prefix.length > 0
   return "#{key_hash}"
-end
-
-$suffix = "\"body\":\"#{'x' * cfg.min_value_size}\"}"
-
-def prepare_data(key_num, key_str, min_value_size)
-  return "{\"key_num\":#{key_num},"\
-          "\"key_str\":\"#{key_str}\"," \
-          "\"mid\":\"#{key_str[-4..-2]}\"," \
-          "\"last\":\"#{key_str[-1..-1]}\"," +
-         $suffix
 end
 
 # ----------------------------------------------------------------
