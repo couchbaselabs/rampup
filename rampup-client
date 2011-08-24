@@ -259,7 +259,10 @@ end
 
 # ----------------------------------------------------------------
 
-if ARGV[0] == 'mongo'
+case ARGV[0]
+when 'none'
+  store = Store.new
+when 'mongo'
   store = StoreMongo.new
 else
   store = StoreMemcached.new
