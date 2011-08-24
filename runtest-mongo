@@ -57,13 +57,20 @@ run "rm -f #{$out_file}"
 $time_curr = $time_start = Time.now
 $time_prev = nil
 $mesg_prev = nil
+$work_prev = nil
 $step_num  = 0
 
-def step(mesg, cmd=nil, elapsed=nil)
+def step(mesg, cmd=nil, elapsed=nil, work=nil)
   $time_curr = Time.now
 
   if $time_prev
     elapsed = $time_curr - $time_prev unless elapsed
+
+    if $mesg_prev and $work_prev and elapsed > 0
+      print "#{$mesg_prev} #{$work_prev}, items/sec: #{$work_prev.to_f / elapsed}\n"
+      `echo "#{$mesg_prev} #{$work_prev}, items/sec: #{$work_prev.to_f / elapsed}" >> #{$out_file}`
+    end
+
     print "# #{$step_num}. #{$mesg_prev} done. elapsed: #{elapsed}\n"
     `echo "# #{$step_num}. #{$mesg_prev} done. elapsed: #{elapsed}" >> #{$out_file}`
   end
@@ -75,6 +82,7 @@ def step(mesg, cmd=nil, elapsed=nil)
 
   $time_prev = $time_curr
   $mesg_prev = mesg
+  $work_prev = work
 
   time(cmd) if cmd
 end
@@ -173,7 +181,8 @@ step("loading-docs...",
      "./rampup-client mongo 127.0.0.1:27017" \
      " ratio_sets=1.0 ratio_creates=1.0" \
      " min_value_size=#{$val_size}" \
-     " max_creates=#{$num_items} exit_after_creates=1")
+     " max_creates=#{$num_items} exit_after_creates=1",
+     nil, $num_items)
 
 # ------------------------------------
 
@@ -181,7 +190,8 @@ step("reading-docs...",
      "./rampup-client mongo 127.0.0.1:27017" \
      " ratio_sets=0.0" \
      " min_value_size=#{$val_size}" \
-     " max_ops=#{$num_items}")
+     " max_ops=#{$num_items}",
+     nil, $num_items)
 
 # ------------------------------------
 
