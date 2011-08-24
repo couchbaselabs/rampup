@@ -135,7 +135,7 @@ step("loading-docs...",
      " ratio_sets=1.0 ratio_creates=1.0" \
      " min_value_size=#{$val_size}" \
      " max_creates=#{$num_items} exit_after_creates=1",
-     nil, num_items)
+     nil, $num_items)
 
 # ------------------------------------
 
@@ -144,7 +144,7 @@ step("reading-docs...",
      " ratio_sets=0.0" \
      " min_value_size=#{$val_size}" \
      " max_ops=#{$num_items}",
-     nil, num_items)
+     nil, $num_items)
 
 # ------------------------------------
 
