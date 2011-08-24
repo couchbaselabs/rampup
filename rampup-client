@@ -13,7 +13,6 @@ require 'memcache'
 
 $cfg_defaults = {
     :prefix => "",           # Prefix for every item key.
-    :target => "ConnNeeded", # Store-specific connection string.
     :max_ops => 0,           # Max number of requests (sets and gets) before exiting.
     :max_creates => 10000,   # Total items to create.
     :min_value_size => 1000, # Minimal value size in bytes during SET's.
@@ -23,8 +22,6 @@ $cfg_defaults = {
     :ratio_hot => 0.2,       # Fraction of items to have as a hot item subset.
     :ratio_hot_sets => 0.95, # Fraction of SET's that hit the hot item subset.
     :ratio_hot_gets => 0.95, # Fraction of GET's that hit the hot item subset.
-    :progress_ops => 10000,  # Report progress after this many ops.
-    :num_items_start => 0,   # Assume there are already this many items.
     :exit_after_creates => 0 # Exit after max_creates is reached.
 }
 
@@ -34,6 +31,17 @@ $cur_defaults = {
   :num_creates => 0, # Number of sets that were creates.
   :num_gets    => 0
 }
+
+if ARGV.length < 2
+  print("usage: rampup-client <mongo|memcached> host:port [key=val[,key=val[...]]]\n")
+  print("\n")
+  print("optional key=val's and their defaults are...\n")
+  ($cfg_defaults.keys + $cur_defaults.keys).map {|x| x.to_s}.sort.each do |k|
+    print("  #{k.ljust(20)} = #{$cfg_defaults[k.to_sym] || $cur_defaults[k.to_sym]}\n")
+  end
+  print("\n")
+  exit(-1)
+end
 
 # ----------------------------------------------------------------
 
@@ -115,7 +123,7 @@ cur = Cur.new
 [[cfg, $cfg_defaults],
  [cur, $cur_defaults]].each do |obj, defaults|
   defaults.each_pair {|k, v| obj.send((k.to_s + '=').to_sym, v) }
-  (ARGV[1..-1] || []).each do |kv|
+  (ARGV[2..-1] || []).each do |kv|
     k, v = kv.split('=')
     unless defaults[k.to_sym].nil?
       v = v.to_f if v == v.to_f.to_s
@@ -251,7 +259,12 @@ end
 
 # ----------------------------------------------------------------
 
-store = StoreMemcached.new
-store.connect(cfg.target)
+if ARGV[0] == 'mongo'
+  store = StoreMongo.new
+else
+  store = StoreMemcached.new
+end
+
+store.connect(ARGV[1])
 
 run(cfg, cur, store)
