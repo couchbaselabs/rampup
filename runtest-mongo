@@ -170,33 +170,17 @@ coll = connect().db($dbName).collection($collName)
 
 step("loading-docs...")
 
-run "./rampup-client mongo 127.0.0.1:27017"
-
-if false
-  coll = connect().db($dbName).collection($collName)
-
-  (0..$num_items).each do |i|
-    doc = {"name" => "MongoDB",
-           "type" => "database",
-           "curr" => i,
-           "info" => {"x" => 203, "y" => '102'}}
-    coll.insert(doc)
-  end
-end
+run("./rampup-client mongo 127.0.0.1:27017" \
+    " ratio_sets=1.0 ratio_creates=1.0" \
+    " max_creates=#{$num_items}")
 
 # ------------------------------------
 
 step("reading-docs...")
 
-run "./rampup-client mongo 127.0.0.1:27017"
-
-if false
-  coll = connect().db($dbName).collection($collName)
-
-  (0..$num_items).each do |i|
-    coll.find({"curr" => i})
-  end
-end
+run("./rampup-client mongo 127.0.0.1:27017" \
+    " ratio_sets=0.0" \
+    " max_ops=#{$num_items}")
 
 # ------------------------------------
 
