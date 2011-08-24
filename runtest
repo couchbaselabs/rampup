@@ -19,6 +19,7 @@ $join_url      = ARGV[7]
 $extra_sleep   = ARGV[8]
 
 $top_user = "root"
+$top_patt = "beam.smp"
 
 # ------------------------------------
 
@@ -61,7 +62,7 @@ def step(mesg, cmd=nil, elapsed=nil)
 end
 
 def time(cmd)
-  system("top -U #{$top_user} | egrep beam.smp > /tmp/top.out &")
+  system("top -U #{$top_user} | egrep #{$top_patt} > /tmp/top.out &")
 
   run cmd
 
@@ -132,7 +133,7 @@ step("loading-docs...",
 step("reading-docs...",
      "./rampup-client memcached 127.0.0.1:11211" \
      " ratio_sets=0.0" \ \
-     " min_value_size=#{val_size}" \
+     " min_value_size=#{$val_size}" \
      " max_ops=#{$num_items}")
 
 # ------------------------------------
