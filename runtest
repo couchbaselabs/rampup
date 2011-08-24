@@ -124,7 +124,7 @@ run "curl -vX PUT http://127.0.0.1:5984/default/_design/rampup -d @rampup.json"
 step("loading-docs...",
      "./rampup-client memcached 127.0.0.1:11211" \
      " ratio_sets=1.0 ratio_creates=1.0" \
-     " min_value_size=#{val_size}" \
+     " min_value_size=#{$val_size}" \
      " max_creates=#{$num_items} exit_after_creates=1")
 
 # ------------------------------------
