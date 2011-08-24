@@ -3,13 +3,12 @@ echo usage : runtest couchbase*.rpm NUM_ITEMS MEMBASE_NUM_VBUCKETS [EXTRA_SLEEP]
 
 echo       : runtest $1 $2 $3
 
-echo # start - runtest $1 $2 $3 
-echo %date%-%time% 
+echo # start - runtest $1 $2 $3
+echo %date%-%time%
 
 set NS_BIN=%~dp0
 set NS_ROOT=%NS_BIN%..
 set NS_ERTS=%NS_ROOT%\erts-5.8.4\bin
-
 
 REM cleanup previous run
 cmd /C service_stop.bat
@@ -32,7 +31,7 @@ sleep 4
 
 curl -vX PUT http://127.0.0.1:5984/default/_design/rampup -d @rampup.json
 echo # loading membase...
-echo %date%-%time% 
+echo %date%-%time%
 pslist | grep erl
 
 set DRIVE_HOST=127.0.0.1
@@ -43,7 +42,7 @@ set EXIT_AFTER_CREATES=1
 "%NS_ERTS%\erl.exe" -eval "rampup:drive_test(), init:stop()."
 
 echo # using membase...
-echo %date%-%time% 
+echo %date%-%time%
 pslist | grep erl
 set DRIVE_HOST=127.0.0.1
 set RATIO_SETS=0.0
@@ -60,7 +59,7 @@ echo # view accessing...
 echo %date%-%time%
 pslist | grep erl
 
-rampup-view.rb "127.0.0.1" 1000
+do-couch-view.rb "127.0.0.1" 1000
 
 echo # done -
 echo %date%-%time%
