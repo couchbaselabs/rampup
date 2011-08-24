@@ -8,9 +8,11 @@ host = ARGV[0]
 n = (ARGV[1] || "1000").to_i
 s = k = 0
 
+v = ARGV[2] || "last"
+
 for x in 0..n
   a = Time.now
-  uri = URI.parse("http://#{host}:5984/default/_design/rampup/_view/random?startkey=#{k}&limit=10&stale=ok")
+  uri = URI.parse("http://#{host}:5984/default/_design/rampup/_view/last?startkey=#{k}&limit=10&stale=ok")
   Net::HTTP.new(uri.host, uri.port).start {|http|
     http.request_get(uri.request_uri)
     http.finish

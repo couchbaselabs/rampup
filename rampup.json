@@ -1,8 +1,11 @@
 {
   "_id" : "_design/rampup",
   "views" : {
-    "random" : {
-      "map" : "function(doc){ emit(doc._rev.slice(10,12), null)}"
+    "mid" : {
+      "map" : "function(doc){ emit(doc.mid, null)}"
+    },
+    "last" : {
+      "map" : "function(doc){ emit(doc.left, null)}"
     }
   }
 }

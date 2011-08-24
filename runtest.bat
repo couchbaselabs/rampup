@@ -53,7 +53,7 @@ echo # view building...
 echo %date%-%time%
 pslist | grep erl
 
-curl http://127.0.0.1:5984/default/_design/rampup/_view/random?limit=10&
+curl http://127.0.0.1:5984/default/_design/rampup/_view/last?limit=10
 
 echo # view accessing...
 echo %date%-%time%
