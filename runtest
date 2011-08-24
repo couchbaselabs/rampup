@@ -39,13 +39,20 @@ run "rm -f #{$out_file}"
 $time_curr = $time_start = Time.now
 $time_prev = nil
 $mesg_prev = nil
+$work_prev = nil
 $step_num  = 0
 
-def step(mesg, cmd=nil, elapsed=nil)
+def step(mesg, cmd=nil, elapsed=nil, work=nil)
   $time_curr = Time.now
 
   if $time_prev
     elapsed = $time_curr - $time_prev unless elapsed
+
+    if $work_prev and elapsed > 0
+      print "items/sec: #{$work_prev.to_f / elapsed}\n"
+      `echo "items/sec: #{$work_prev.to_f / elapsed}" >> #{$out_file}`
+    end
+
     print "# #{$step_num}. #{$mesg_prev} done. elapsed: #{elapsed}\n"
     `echo "# #{$step_num}. #{$mesg_prev} done. elapsed: #{elapsed}" >> #{$out_file}`
   end
@@ -57,6 +64,7 @@ def step(mesg, cmd=nil, elapsed=nil)
 
   $time_prev = $time_curr
   $mesg_prev = mesg
+  $work_prev = work
 
   time(cmd) if cmd
 end
@@ -126,7 +134,8 @@ step("loading-docs...",
      "./rampup-client memcached 127.0.0.1:11211" \
      " ratio_sets=1.0 ratio_creates=1.0" \
      " min_value_size=#{$val_size}" \
-     " max_creates=#{$num_items} exit_after_creates=1")
+     " max_creates=#{$num_items} exit_after_creates=1",
+     nil, num_items)
 
 # ------------------------------------
 
@@ -134,12 +143,14 @@ step("reading-docs...",
      "./rampup-client memcached 127.0.0.1:11211" \
      " ratio_sets=0.0" \
      " min_value_size=#{$val_size}" \
-     " max_ops=#{$num_items}")
+     " max_ops=#{$num_items}",
+     nil, num_items)
 
 # ------------------------------------
 
 step("view-building...",
-     "/usr/bin/time -a -o #{$out_file} curl -v http://127.0.0.1:5984/default/_design/rampup/_view/last?limit=10")
+     "/usr/bin/time -a -o #{$out_file}" \
+     " curl -v http://127.0.0.1:5984/default/_design/rampup/_view/last?limit=10")
 
 # ------------------------------------
 
