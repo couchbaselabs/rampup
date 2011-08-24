@@ -82,6 +82,8 @@ end
   print("  #{k.ljust(20)} = #{cur.send(k.to_sym)}\n")
 end
 
+print("\n")
+
 # ----------------------------------------------------------------
 
 $body   = 'x' * cfg.min_value_size
@@ -101,6 +103,10 @@ class Store
             "\"mid\":\"#{key_str[-4..-2]}\"," \
             "\"last\":\"#{key_str[-1..-1]}\"," +
            $suffix
+  end
+
+  def cmd_line_get(key_str)
+    return key_str
   end
 end
 
@@ -122,6 +128,10 @@ class StoreMemcached < Store
       print("ERROR: unknown StoreMemcached cmd: #{cmd}\n")
       exit(-1)
     end
+  end
+
+  def cmd_line_get(key_str)
+    return "echo get #{key_str} | nc #{@target.split(':').join(' ')}"
   end
 end
 
@@ -223,6 +233,9 @@ def next_cmd(cfg, cur, store)
 
     key_str = prepare_key(key_num, cfg.prefix)
     itm_val = store.gen_doc(key_num, key_str, cfg.min_value_size)
+
+print("#{itm_val}\n")
+
     return :set, key_num, key_str, itm_val,
            :success, nil
   else
@@ -288,5 +301,16 @@ else
 end
 
 store.connect(ARGV[1])
+
+# ----------------------------------------------------------------
+
+print("First 5 keys...\n")
+(0..5).each do |x|
+  print(store.cmd_line_get(prepare_key(x, cfg.prefix)) + "\n")
+end
+
+print("\n")
+
+# ----------------------------------------------------------------
 
 run(cfg, cur, store)
