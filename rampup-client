@@ -98,7 +98,7 @@ class Store
   end
 
   def gen_doc(key_num, key_str, min_value_size)
-    return "{\"_id\":\"#{key_str}\"," \
+    return "{\"key\":\"#{key_str}\"," \
             "\"key_num\":#{key_num}," \
             "\"mid\":\"#{key_str[-4..-2]}\"," \
             "\"last\":\"#{key_str[-1..-1]}\"," +
