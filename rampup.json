@@ -5,7 +5,7 @@
       "map" : "function(doc){ emit(doc.mid, null)}"
     },
     "last" : {
-      "map" : "function(doc){ emit(doc.left, null)}"
+      "map" : "function(doc){ emit(doc.last, null)}"
     }
   }
 }
