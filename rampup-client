@@ -123,7 +123,7 @@ class StoreMemcached < Store
     when :get
       return @conn.get(key_str)
     when :set
-      return @conn.set(key_str, data)
+      return @conn.set(key_str, data, 0, true) # Raw is true.
     else
       print("ERROR: unknown StoreMemcached cmd: #{cmd}\n")
       exit(-1)
