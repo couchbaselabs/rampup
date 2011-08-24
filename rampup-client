@@ -110,7 +110,7 @@ class Store
   end
 end
 
-class StoreMemcached < Store
+class StoreMemCache < Store
   require 'memcache'
 
   def connect(target) # host:port
@@ -124,6 +124,32 @@ class StoreMemcached < Store
       return @conn.get(key_str)
     when :set
       return @conn.set(key_str, data, 0, true) # Raw is true.
+    else
+      print("ERROR: unknown StoreMemcached cmd: #{cmd}\n")
+      exit(-1)
+    end
+  end
+
+  def cmd_line_get(key_str)
+    return "echo get #{key_str} | nc #{@target.split(':').join(' ')}"
+  end
+end
+
+class StoreDalli < Store
+  require 'dalli'
+
+  def connect(target) # host:port
+    @target = target
+    @conn   = Dalli::Client.new([target])
+    @opts   = { :raw => true }
+  end
+
+  def command(cmd, key_num, key_str, data)
+    case cmd
+    when :get
+      return @conn.get(key_str)
+    when :set
+      return @conn.set(key_str, data, nil, @opts)
     else
       print("ERROR: unknown StoreMemcached cmd: #{cmd}\n")
       exit(-1)
@@ -234,8 +260,6 @@ def next_cmd(cfg, cur, store)
     key_str = prepare_key(key_num, cfg.prefix)
     itm_val = store.gen_doc(key_num, key_str, cfg.min_value_size)
 
-print("#{itm_val}\n")
-
     return :set, key_num, key_str, itm_val,
            :success, nil
   else
@@ -247,6 +271,7 @@ print("#{itm_val}\n")
       key_num = choose_key_num(num_items, cfg.ratio_hot, cfg.ratio_hot_gets, num_gets)
       key_str = prepare_key(key_num, cfg.prefix)
       itm_val = store.gen_doc(key_num, key_str, cfg.min_value_size)
+
       return :get, key_num, key_str, nil,
              :success, itm_val
     else
@@ -291,13 +316,15 @@ end
 
 # ----------------------------------------------------------------
 
-case ARGV[0]
+case ARGV[0].downcase
 when 'none'
   store = Store.new
 when 'mongo'
   store = StoreMongo.new
+when 'memcached-memcache'
+  store = StoreMemCache.new
 else
-  store = StoreMemcached.new
+  store = StoreDalli.new
 end
 
 store.connect(ARGV[1])
