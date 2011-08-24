@@ -196,13 +196,20 @@ step("reading-docs...",
 
 # ------------------------------------
 
+step("nonview-accessing...",
+     "./do-mongo-view 127.0.0.1 200 >> #{$out_file}",
+     nil, 200)
+
+# ------------------------------------
+
 step("view-building...",
      "#{$mongo_base}/bin/mongo 127.0.0.1:27017/test ensureIndex-last.js")
 
 # ------------------------------------
 
 step("view-accessing...",
-     "./do-mongo-view 127.0.0.1 10000 >> #{$out_file}")
+     "./do-mongo-view 127.0.0.1 10000 >> #{$out_file}",
+     nil, 10000)
 
 # ------------------------------------
 

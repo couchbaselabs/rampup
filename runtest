@@ -149,14 +149,15 @@ step("reading-docs...",
 
 # ------------------------------------
 
-step("view-building...",
+step("index-building...",
      "/usr/bin/time -a -o #{$out_file}" \
      " curl -v http://127.0.0.1:5984/default/_design/rampup/_view/last?limit=10")
 
 # ------------------------------------
 
-step("view-accessing...",
-     "./do-couch-view 127.0.0.1 10000 >> #{$out_file}")
+step("index-accessing...",
+     "./do-couch-view 127.0.0.1 10000 >> #{$out_file}",
+     nil, 10000)
 
 # ------------------------------------
 
