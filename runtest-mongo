@@ -1,23 +1,20 @@
 #!/usr/bin/env ruby
 
-# sudo gem install mongo
-# sudo gem install bson
-# sudo gem install bson_ext
-# sudo gem install SystemTimer
-
-require 'rubygems'
-require 'mongo'
-
-OH = BSON::OrderedHash
-
 if ARGV.length < 4
   print("runtest TEST_NAME MONGO RAM_QUOTA REPLICA_COUNT NUM_ITEMS NUM_VBUCKETS VAL_SIZE [SHARDS] [EXTRA_SLEEP]\n")
   exit(-1)
 end
 
-print "runtest #{ARGV.join(' ')}\n"
+# ------------------------------------
 
-$test_name     = ARGV[0]
+$test_name = ARGV[0]
+$top_user  = "root"
+$top_patt  = "mongod"
+
+load 'util.rb'
+
+# ------------------------------------
+
 $mongo         = ARGV[1] # Might be a url (http://fastdl.mongodb.org/linux/mongodb-linux-x86_64-1.8.3.tgz)
                          # or part of a url, like: mongodb-linux-x86_64-1.8.3
 $mongo_base    = $mongo.split('/')[-1].sub('.tgz', '') # Ex: 'mongodb-linux-x86_64-1.8.3'
@@ -29,72 +26,24 @@ $val_size      = (ARGV[6] || "1000").to_i
 $shards        = (ARGV[7] || "").split(',')
 $extra_sleep   = ARGV[8]
 
+# ------------------------------------
+
+# sudo gem install mongo
+# sudo gem install bson
+# sudo gem install bson_ext
+# sudo gem install SystemTimer
+
+require 'rubygems'
+require 'mongo'
+
+OH = BSON::OrderedHash
+
 $sharded = true
 
 $host     = "localhost"
 $dbName   = "test"
 $collName = "test"
 $safe     = true
-
-$top_user = "root"
-$top_patt = "mongod"
-
-# ------------------------------------
-
-def run(cmd, use_system=false)
-  print("#{cmd}\n")
-  if use_system
-    system(cmd)
-  else
-    `#{cmd}`
-  end
-end
-
-run "mkdir -p out"
-$out_file = "out/#{$test_name}"
-run "rm -f #{$out_file}"
-
-$time_curr = $time_start = Time.now
-$time_prev = nil
-$mesg_prev = nil
-$work_prev = nil
-$step_num  = 0
-
-def step(mesg, cmd=nil, elapsed=nil, work=nil)
-  $time_curr = Time.now
-
-  if $time_prev
-    elapsed = $time_curr - $time_prev unless elapsed
-
-    if $mesg_prev and $work_prev and elapsed > 0
-      print "#{$mesg_prev} #{$work_prev}, items/sec: #{$work_prev.to_f / elapsed}\n"
-      `echo "#{$mesg_prev} #{$work_prev}, items/sec: #{$work_prev.to_f / elapsed}" >> #{$out_file}`
-    end
-
-    print "# #{$step_num}. #{$mesg_prev} done. elapsed: #{elapsed}\n"
-    `echo "# #{$step_num}. #{$mesg_prev} done. elapsed: #{elapsed}" >> #{$out_file}`
-  end
-
-  $step_num  = $step_num + 1
-
-  print "# #{$step_num}. #{mesg} #{$time_curr.strftime('%Y%m%d-%H%M%S')}\n"
-  `echo "# #{$step_num}. #{mesg} #{$time_curr.strftime('%Y%m%d-%H%M%S')}" >> #{$out_file}`
-
-  $time_prev = $time_curr
-  $mesg_prev = mesg
-  $work_prev = work
-
-  time(cmd) if cmd
-end
-
-def time(cmd)
-  system("top -U #{$top_user} | egrep #{$top_patt} > /tmp/top.out &")
-
-  run cmd
-
-  `killall top`
-  `tail -n 50 /tmp/top.out | head -n 10 >> #{$out_file}`
-end
 
 # ------------------------------------
 
