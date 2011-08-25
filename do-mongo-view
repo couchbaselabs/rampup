@@ -19,7 +19,7 @@ coll = db.collection($collName)
 
 for x in 0..n
   query = {}
-  query[v] = { "$gte" => x.to_s }
+  query[v] = { "$gte" => k.to_s }
 
   a = Time.now
 
