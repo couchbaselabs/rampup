@@ -1,6 +1,9 @@
 #!/usr/bin/env ruby
 
-# example: ./runtests $package $ram_quotas,csv $replica_counts,csv $num_items,csv $nodes,csv $vbucket-range $val-size-arr [$key=val,csv]
+# example: ./runtests $package \
+#            $ram_quotas,csv $replica_counts,csv \
+#            $num_items,csv $nodes,csv $vbucket-range $val-size-arr \
+#            [$key=val,csv]
 #
 pkg = ARGV[0] # Ex: "../couchbase-server-community_x86_64_2.0.0r-289-gc0dbb43.rpm"
 
@@ -10,6 +13,9 @@ unless pkg
   print "example: ./runtests couchbase-server*.rpm 5000 0 100000 1 1 1000\n"
   exit(-1)
 end
+
+pkg_base = pkg.split('/')[-1]
+pkg_base = pkg_base.split('-')[0]
 
 $start = Time.now.strftime("%Y%m%d%H%M%S")
 
@@ -56,8 +62,10 @@ def test_name(pkg, ram_quota, replica_count, num_items, nodes, vbuckets, val_siz
           "#{ram_quota}-#{replica_count}-#{num_items}-#{nodes}-#{vbuckets}-#{val_size}"]
 end
 
-def stack_name(pkg, ram_quota, replica_count, num_items, nodes, vbuckets, val_size, opts)
-  stack = test_name(pkg, ram_quota, replica_count, num_items, nodes, vbuckets, val_size, opts)
+def stack_name(pkg, ram_quota, replica_count,
+               num_items, nodes, vbuckets, val_size, opts)
+  stack = test_name(pkg, ram_quota, replica_count,
+                    num_items, nodes, vbuckets, val_size, opts)
   stack = stack.join('-').gsub('_', '-').gsub('.', '-')
   return stack
 end
@@ -69,30 +77,37 @@ end
 
 # ------------------------------------------
 
-def prepare_cluster(pkg_in, ram_quota, replica_count, num_items, nodes, vbuckets, val_size, opts)
+def prepare_cluster(pkg_in, ram_quota, replica_count,
+                    num_items, nodes, vbuckets, val_size, opts)
   return nil if nodes <= 1
 
   if opts['cluster.type'] == 'new-stack'
-    return prepare_cluster_new_stack(pkg_in, ram_quota, replica_count, num_items, nodes, vbuckets, val_size, opts)
+    return prepare_cluster_new_stack(pkg_in, ram_quota, replica_count,
+                                     num_items, nodes, vbuckets, val_size, opts)
   end
 
-  return prepare_cluster_existing(pkg_in, ram_quota, replica_count, num_items, nodes, vbuckets, val_size, opts)
+  return prepare_cluster_existing(pkg_in, ram_quota, replica_count,
+                                  num_items, nodes, vbuckets, val_size, opts)
 end
 
-def teardown_cluster(pkg, ram_quota, replica_count, num_items, nodes, vbuckets, val_size, opts)
+def teardown_cluster(pkg, ram_quota, replica_count,
+                     num_items, nodes, vbuckets, val_size, opts)
   return if nodes <= 1
   return if opts['cluster.teardown'] != 'y'
 
   if opts['cluster.type'] == 'new-stack'
-    return teardown_cluster_new_stack(pkg, ram_quota, replica_count, num_items, nodes, vbuckets, val_size, opts)
+    return teardown_cluster_new_stack(pkg, ram_quota, replica_count,
+                                      num_items, nodes, vbuckets, val_size, opts)
   end
 
-  return teardown_cluster_existing(pkg, ram_quota, replica_count, num_items, nodes, vbuckets, val_size, opts)
+  return teardown_cluster_existing(pkg, ram_quota, replica_count,
+                                   num_items, nodes, vbuckets, val_size, opts)
 end
 
 # ------------------------------------------
 
-def prepare_cluster_new_stack(pkg_in, ram_quota, replica_count, num_items, nodes, vbuckets, val_size, opts)
+def prepare_cluster_new_stack(pkg_in, ram_quota, replica_count,
+                              num_items, nodes, vbuckets, val_size, opts)
   return nil if nodes <= 1
 
   # Prepare an AWS EC2 CloudFormation cluster (or a stack) with nodes number of nodes.
@@ -106,7 +121,8 @@ def prepare_cluster_new_stack(pkg_in, ram_quota, replica_count, num_items, nodes
     `wget -O #{pkg_in} #{pkg_url}`
   end
 
-  stack    = stack_name(pkg_in, ram_quota, replica_count, num_items, nodes, vbuckets, val_size, opts)
+  stack    = stack_name(pkg_in, ram_quota, replica_count,
+                        num_items, nodes, vbuckets, val_size, opts)
   template = "#{nodes - 1}-pack-#{pkg_base}" # Ex: '1-pack-couchbase'
 
   `rm -f #{template}`
@@ -129,7 +145,8 @@ def prepare_cluster_new_stack(pkg_in, ram_quota, replica_count, num_items, nodes
     s = `cfn-describe-stacks #{stack} --show-table`.split(' ')
 
     # ["STACK", "vmerge-test-x", "CREATE_COMPLETE",
-    #  "Template", "for", "couchbase", "server", "on", "EC2", "RESTWebConsoleURL=http://50.19.133.35:8091", "2011-08-11T23:17:16Z"]
+    #  "Template", "for", "couchbase", "server", "on", "EC2",
+    #  "RESTWebConsoleURL=http://50.19.133.35:8091", "2011-08-11T23:17:16Z"]
     #
     if s[2] == "CREATE_COMPLETE"
       return s[-2].split('=')[1].split('/')[-1]
@@ -139,17 +156,20 @@ def prepare_cluster_new_stack(pkg_in, ram_quota, replica_count, num_items, nodes
   end
 end
 
-def teardown_cluster_new_stack(pkg, ram_quota, replica_count, num_items, nodes, vbuckets, val_size, opts)
+def teardown_cluster_new_stack(pkg, ram_quota, replica_count,
+                               num_items, nodes, vbuckets, val_size, opts)
   return if nodes <= 1
 
-  stack = stack_name(pkg, ram_quota, replica_count, num_items, nodes, vbuckets, val_size, opts)
+  stack = stack_name(pkg, ram_quota, replica_count,
+                     num_items, nodes, vbuckets, val_size, opts)
 
   `cfn-delete-stack #{stack} --force`
 end
 
 # ------------------------------------------
 
-def prepare_cluster_existing(pkg_in, ram_quota, replica_count, num_items, nodes, vbuckets, val_size, opts)
+def prepare_cluster_existing(pkg_in, ram_quota, replica_count,
+                             num_items, nodes, vbuckets, val_size, opts)
   return nil if nodes <= 1
 
   hosts = opts['cluster.hosts'].split('+')
@@ -167,7 +187,8 @@ def prepare_cluster_existing(pkg_in, ram_quota, replica_count, num_items, nodes,
   pkg_base = pkg.split('-')[0]  # Ex: 'couchbase'
   pkg_url  = "#{opts['cluster.package-url-base']}/#{pkg}"
 
-  teardown_cluster_existing(pkg_in, ram_quota, replica_count, num_items, nodes, vbuckets, val_size, opts)
+  teardown_cluster_existing(pkg_in, ram_quota, replica_count,
+                            num_items, nodes, vbuckets, val_size, opts)
 
   i = 1
   while i < nodes
@@ -181,16 +202,19 @@ def prepare_cluster_existing(pkg_in, ram_quota, replica_count, num_items, nodes,
     run "#{$ssh} #{user}@#{host} sudo ./after-install #{vbuckets}"
 
     if i == 1
-      run "#{$ssh} #{user}@#{host} /opt/#{$pkg_base}/bin/membase cluster-init -c 127.0.0.1 \
+      run "#{$ssh} #{user}@#{host} /opt/#{$pkg_base}/bin/membase \
+        cluster-init -c 127.0.0.1 \
         --cluster-init-username=Administrator \
         --cluster-init-password=password"
-      run "#{$ssh} #{user}@#{host} /opt/#{$pkg_base}/bin/membase bucket-create -c 127.0.0.1 \
+      run "#{$ssh} #{user}@#{host} /opt/#{$pkg_base}/bin/membase \
+        bucket-create -c 127.0.0.1 \
         -u Administrator -p password \
         --bucket=default --bucket-type=membase --bucket-password= \
         --bucket-ramsize=#{ram_quota} \
         --bucket-replica=#{replica_count}"
     else
-      run "#{$ssh} #{user}@#{host} /opt/#{$pkg_base}/bin/membase server-add -c #{hosts[0]} \
+      run "#{$ssh} #{user}@#{host} /opt/#{$pkg_base}/bin/membase \
+        server-add -c #{hosts[0]} \
         -u Administrator -p password \
         --server-add=#{host}"
     end
@@ -201,7 +225,8 @@ def prepare_cluster_existing(pkg_in, ram_quota, replica_count, num_items, nodes,
   return hosts[0]
 end
 
-def teardown_cluster_existing(pkg_in, ram_quota, replica_count, num_items, nodes, vbuckets, val_size, opts)
+def teardown_cluster_existing(pkg_in, ram_quota, replica_count,
+                              num_items, nodes, vbuckets, val_size, opts)
   return if nodes <= 1
 
   hosts = opts['cluster.hosts'].split('+')
@@ -230,20 +255,23 @@ ram_quotas_arr.each do |ram_quota|
       while i <= vbucket_max
         num_items_arr.each do |num_items|
           val_size_arr.each do |val_size|
-            test_dir, test_file = test_name(pkg, ram_quota, replica_count, num_items, nodes, i, val_size, opts)
+            test_dir, test_file = test_name(pkg, ram_quota, replica_count,
+                                            num_items, nodes, i, val_size, opts)
             `mkdir -p ./out/#{test_dir}`
 
             test_name = "#{test_dir}/#{test_file}.out"
             print "#{test_name} ...\n"
 
-            cluster_host_port = prepare_cluster(pkg, ram_quota, replica_count, num_items, nodes, i, val_size, opts)
+            cluster_host_port = prepare_cluster(pkg, ram_quota, replica_count,
+                                                num_items, nodes, i, val_size, opts)
 
-            run "./runtest #{test_name} #{pkg}" \
+            run "./runtest-#{pkg_base} #{test_name} #{pkg}" \
                 " #{ram_quota} #{replica_count} #{num_items} #{i} #{val_size}" \
                 " #{cluster_host_port} #{opts['extra_sleep']}"
             sleep 1
 
-            teardown_cluster(pkg, ram_quota, replica_count, num_items, nodes, i, val_size, opts)
+            teardown_cluster(pkg, ram_quota, replica_count,
+                             num_items, nodes, i, val_size, opts)
           end
         end
 
