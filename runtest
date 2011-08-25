@@ -185,4 +185,21 @@ end
 w = `/opt/#{$pkg_base}/bin/mbstats 127.0.0.1:11210 all | grep "ep_warmup_time:"`
 w = w.split(' ')[-1]
 
-step("done...", nil, w)
+# ------------------------------------
+
+step("index-rebuilding...",
+     'curl -H "Content-Type: application/json"' +
+     ' -X POST http://localhost:5984/default/_compact/rampup',
+     w)
+
+i = 0
+while i < 100000
+  h = `curl -X GET http://127.0.0.1:5984/default/_design/rampup/_info`
+  break if h.include?('"compact_running":false')
+  sleep 1
+  i = i + 1
+end
+
+# ------------------------------------
+
+step("done...")
