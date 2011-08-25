@@ -8,9 +8,12 @@
 pkg = ARGV[0] # Ex: "../couchbase-server-community_x86_64_2.0.0r-289-gc0dbb43.rpm"
 
 unless pkg
-  print "usage: ./runtests $package $ram_quotas,csv $replica_counts,csv $num_items,csv $nodes,csv $vbucket-range $val-size-arr [$key=val,csv]\n"
-  print "example: ./runtests couchbase-server*.rpm 5000 0,1 1000,100000,1000000 1,2,3,4 1-64 128,1000,10000\n"
-  print "example: ./runtests couchbase-server*.rpm 5000 0 100000 1 1 1000\n"
+  print "usage: ./runtests $package $ram_quotas,csv $replica_counts,csv" +
+        " $num_items,csv $nodes,csv $vbucket-range $val-size-arr [$key=val,csv]\n"
+  print "example: ./runtests couchbase-server*.rpm" +
+        " 5000 0,1 1000,100000,1000000 1,2,3,4 1-64 128,1000,10000\n"
+  print "example: ./runtests couchbase-server*.rpm" +
+        " 5000 0 100000 1 1 1000\n"
   exit(-1)
 end
 
@@ -115,8 +118,8 @@ def prepare_cluster_new_stack(pkg_in, ram_quota, replica_count,
   # Prepare an AWS EC2 CloudFormation cluster (or a stack) with nodes number of nodes.
   #
   pkg      = pkg_in
-  pkg      = pkg.split('/')[-1] # Ex: 'couchbase-server-community_x86_64_2.0.0r-289-gc0dbb43.rpm'
-  pkg_base = pkg.split('-')[0]  # Ex: 'couchbase'
+  pkg      = pkg.split('/')[-1]
+  pkg_base = pkg.split('-')[0]
   pkg_url  = "#{opts['cluster.package-url-base']}/#{pkg}"
 
   unless File.exists?(pkg_in)
@@ -185,8 +188,8 @@ def prepare_cluster_existing(pkg_in, ram_quota, replica_count,
   # Prepare an AWS EC2 CloudFormation cluster (or a stack) with nodes number of nodes.
   #
   pkg      = pkg_in
-  pkg      = pkg.split('/')[-1] # Ex: 'couchbase-server-community_x86_64_2.0.0r-289-gc0dbb43.rpm'
-  pkg_base = pkg.split('-')[0]  # Ex: 'couchbase'
+  pkg      = pkg.split('/')[-1]
+  pkg_base = pkg.split('-')[0]
   pkg_url  = "#{opts['cluster.package-url-base']}/#{pkg}"
 
   teardown_cluster_existing(pkg_in, ram_quota, replica_count,
@@ -235,8 +238,8 @@ def teardown_cluster_existing(pkg_in, ram_quota, replica_count,
   user  = opts['cluster.user']
 
   pkg      = pkg_in
-  pkg      = pkg.split('/')[-1] # Ex: 'couchbase-server-community_x86_64_2.0.0r-289-gc0dbb43.rpm'
-  pkg_base = pkg.split('-')[0]  # Ex: 'couchbase'
+  pkg      = pkg.split('/')[-1]
+  pkg_base = pkg.split('-')[0]
   pkg_url  = "#{opts['cluster.package-url-base']}/#{pkg}"
 
   hosts.each do |host|

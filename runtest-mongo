@@ -15,8 +15,10 @@ load 'util.rb'
 
 # ------------------------------------
 
-$mongo         = ARGV[1] # Might be a url (http://fastdl.mongodb.org/linux/mongodb-linux-x86_64-1.8.3.tgz)
-                         # or part of a url, like: mongodb-linux-x86_64-1.8.3
+# Might be a url (http://fastdl.mongodb.org/linux/mongodb-linux-x86_64-1.8.3.tgz)
+# or part of a url, like: mongodb-linux-x86_64-1.8.3
+#
+$mongo         = ARGV[1]
 $mongo_base    = $mongo.split('/')[-1].sub('.tgz', '') # Ex: 'mongodb-linux-x86_64-1.8.3'
 $ram_quota     = ARGV[2]
 $replica_count = ARGV[3]
@@ -49,7 +51,8 @@ $safe     = true
 
 def start_mongo()
   if $sharded
-    run("nohup #{$mongo_base}/bin/mongod --dbpath #{$db_path} --port 20000 --rest &", true)
+    run("nohup #{$mongo_base}/bin/mongod --dbpath #{$db_path}" +
+        " --port 20000 --rest &", true)
     connect(20000)
     run("nohup #{$mongo_base}/bin/mongos --configdb localhost:20000 &", true)
   else
