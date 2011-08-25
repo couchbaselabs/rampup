@@ -264,13 +264,13 @@ ram_quotas_arr.each do |ram_quota|
                                             num_items, nodes, i, val_size, opts)
             `mkdir -p ./out/#{test_dir}`
 
-            test_name = "#{test_dir}/#{test_file}.out"
-            print "#{test_name} ...\n"
+            test_out = "#{test_dir}/#{test_file}.out"
+            print "#{test_out} ...\n"
 
             cluster_host_port = prepare_cluster(pkg, ram_quota, replica_count,
                                                 num_items, nodes, i, val_size, opts)
 
-            run "./runtest-#{pkg_base} #{test_name} #{pkg}" \
+            run "./runtest-#{pkg_base} #{test_out} #{pkg}" \
                 " #{ram_quota} #{replica_count} #{num_items} #{i} #{val_size}" \
                 " #{cluster_host_port} #{opts['extra_sleep']}"
             sleep 1
