@@ -207,6 +207,11 @@ step("index-building...",
 
 # ------------------------------------
 
+step("fsyncing...",
+     "#{$mongo_base}/bin/mongo 127.0.0.1:27017/admin fsync.js")
+
+# ------------------------------------
+
 step("index-accessing...",
      "./do-mongo-view 127.0.0.1 10000 >> #{$out_file}",
      nil, 10000)
