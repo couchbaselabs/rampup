@@ -8,8 +8,8 @@
 $pkg = pkg = ARGV[0] # Ex: "../couchbase-server-community_x86_64_2.0.0r-289-gc0dbb43.rpm"
 
 unless pkg
-  print "usage: ./runtests $package $ram_quotas,csv $replica_counts,csv" +
-        " $num_items,csv $nodes,csv $vbucket-range $val-size-arr [$key=val,csv]\n"
+  print "usage: ./runtests $package $ram_quotas,csv $replica_counts,csv \\\n" +
+        "         $num_items,csv $nodes,csv $vbucket-range $val-size-arr [$key=val,csv]\n"
   print "example: ./runtests couchbase-server*.rpm" +
         " 5000 0,1 1000,100000,1000000 1,2,3,4 1-64 128,1000,10000\n"
   print "example: ./runtests couchbase-server*.rpm" +
