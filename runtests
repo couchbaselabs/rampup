@@ -51,6 +51,13 @@ opts = {
 $ssh = "ssh -t"
 $ssh = $ssh + " -i #{opts['cluster.identity']}" if opts['cluster.identity']
 
+def run(cmd)
+  print("#{cmd}\n")
+  `#{cmd}`
+end
+
+# ------------------------------------------
+
 def test_name(pkg, ram_quota, replica_count, num_items, nodes, vbuckets, val_size, opts)
   pkg = pkg.split('/')[-1]
   # Ex: 'couchbase-server-community_x86_64_2.0.0r-289-gc0dbb43.rpm'
@@ -68,11 +75,6 @@ def stack_name(pkg, ram_quota, replica_count,
                     num_items, nodes, vbuckets, val_size, opts)
   stack = stack.join('-').gsub('_', '-').gsub('.', '-')
   return stack
-end
-
-def run(cmd)
-  print("#{cmd}\n")
-  `#{cmd}`
 end
 
 # ------------------------------------------
