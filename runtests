@@ -5,7 +5,7 @@
 #            $num_items,csv $nodes,csv $vbucket-range $val-size-arr \
 #            [$key=val,csv]
 #
-pkg = ARGV[0] # Ex: "../couchbase-server-community_x86_64_2.0.0r-289-gc0dbb43.rpm"
+$pkg = pkg = ARGV[0] # Ex: "../couchbase-server-community_x86_64_2.0.0r-289-gc0dbb43.rpm"
 
 unless pkg
   print "usage: ./runtests $package $ram_quotas,csv $replica_counts,csv" +
@@ -17,8 +17,8 @@ unless pkg
   exit(-1)
 end
 
-pkg_base = pkg.split('/')[-1]
-pkg_base = pkg_base.split('-')[0]
+$pkg_base = pkg.split('/')[-1]
+$pkg_base = pkg_base = $pkg_base.split('-')[0]
 
 $start = Time.now.strftime("%Y%m%d%H%M%S")
 
@@ -207,18 +207,18 @@ def prepare_cluster_existing(pkg_in, ram_quota, replica_count,
     run "#{$ssh} #{user}@#{host} sudo ./after-install #{vbuckets}"
 
     if i == 1
-      run "#{$ssh} #{user}@#{host} /opt/#{$pkg_base}/bin/membase \
+      run "#{$ssh} #{user}@#{host} /opt/#{pkg_base}/bin/membase \
         cluster-init -c 127.0.0.1 \
         --cluster-init-username=Administrator \
         --cluster-init-password=password"
-      run "#{$ssh} #{user}@#{host} /opt/#{$pkg_base}/bin/membase \
+      run "#{$ssh} #{user}@#{host} /opt/#{pkg_base}/bin/membase \
         bucket-create -c 127.0.0.1 \
         -u Administrator -p password \
         --bucket=default --bucket-type=membase --bucket-password= \
         --bucket-ramsize=#{ram_quota} \
         --bucket-replica=#{replica_count}"
     else
-      run "#{$ssh} #{user}@#{host} /opt/#{$pkg_base}/bin/membase \
+      run "#{$ssh} #{user}@#{host} /opt/#{pkg_base}/bin/membase \
         server-add -c #{hosts[0]} \
         -u Administrator -p password \
         --server-add=#{host}"
