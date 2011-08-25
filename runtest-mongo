@@ -233,7 +233,14 @@ step("warming...")
 
 coll = connect(27017, 100).db($dbName).collection($collName)
 
-coll.find({"curr" => 0})
+coll.find({"last" => 0}).limit(10).each {|doc| doc }
+
+# ------------------------------------
+
+step("index-rebuilding...",
+     "#{$mongo_base}/bin/mongo 127.0.0.1:27017/test reIndex-last.js")
+
+coll.find({"last" => 0}).limit(10).each {|doc| doc }
 
 # ------------------------------------
 
