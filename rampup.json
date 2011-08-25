@@ -1,9 +1,6 @@
 {
   "_id" : "_design/rampup",
   "views" : {
-    "mid" : {
-      "map" : "function(doc){ emit(doc.mid, null)}"
-    },
     "last" : {
       "map" : "function(doc){ emit(doc.last, null)}"
     }
