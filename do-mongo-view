@@ -17,16 +17,13 @@ conn = Mongo::Connection.new($host, 27017, :safe => $safe)
 db   = conn.db($dbName)
 coll = db.collection($collName)
 
-require 'net/http'
-require 'uri'
-
 for x in 0..n
   query = {}
   query[v] = { "$gte" => x.to_s }
 
   a = Time.now
 
-  # Not running through the result is, unsurprisingly, faster.
+  # Not running through the result seems, interestingly, faster.
   #
   # coll.find(query).limit(10)
   #
