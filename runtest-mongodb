@@ -53,7 +53,7 @@ def start_mongo()
   if $sharded
     run("nohup #{$mongo_base}/bin/mongod --dbpath #{$db_path}" +
         " --port 20000 --rest &", true)
-    connect(20000, 20)
+    connect(20000, 100)
     run("nohup #{$mongo_base}/bin/mongos --configdb localhost:20000 &", true)
   else
     run("nohup #{$mongo_base}/bin/mongod --dbpath #{$db_path} &", true)
