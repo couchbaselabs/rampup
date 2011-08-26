@@ -1,5 +1,9 @@
 View Merging Tests
 
+On Amazon Default Linux EC2 nodes, you'll need to get the right openssl...
+
+  sudo yum install openssl098e
+
 On ubuntu...
 
   apt-get install git-core

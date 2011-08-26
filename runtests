@@ -185,7 +185,8 @@ def prepare_cluster_existing(pkg_in, ram_quota, replica_count,
     exit(-1)
   end
 
-  # Prepare an AWS EC2 CloudFormation cluster (or a stack) with nodes number of nodes.
+  # Prepare an AWS EC2 cluster (or a stack) from an
+  # existing list of pre-launched machines.
   #
   pkg      = pkg_in
   pkg      = pkg.split('/')[-1]
