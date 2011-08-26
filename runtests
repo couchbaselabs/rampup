@@ -255,7 +255,7 @@ end
 ram_quotas_arr.each do |ram_quota|
   replica_counts_arr.each do |replica_count|
     nodes_arr.each do |nodes|
-      i = vbucket_min
+      i = [vbucket_min, vbucket_max].min
 
       while i <= vbucket_max
         num_items_arr.each do |num_items|
