@@ -98,7 +98,6 @@ end
 def teardown_cluster(pkg, ram_quota, replica_count,
                      num_items, nodes, vbuckets, val_size, opts)
   return if nodes <= 1
-  return if opts['cluster.teardown'] != 'y'
 
   if opts['cluster.type'] == 'new-stack'
     return teardown_cluster_new_stack(pkg, ram_quota, replica_count,
@@ -276,8 +275,10 @@ ram_quotas_arr.each do |ram_quota|
                 " #{cluster_host_port} #{opts['extra_sleep']}"
             sleep 1
 
-            teardown_cluster(pkg, ram_quota, replica_count,
-                             num_items, nodes, i, val_size, opts)
+            if opts['cluster.teardown'] == 'y'
+              teardown_cluster(pkg, ram_quota, replica_count,
+                               num_items, nodes, i, val_size, opts)
+            end
           end
         end
 
