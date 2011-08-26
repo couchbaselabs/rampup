@@ -65,9 +65,9 @@ def connect(port = 27017, max_tries = 10)
   i = 0
   while i < max_tries
     begin
-      print "connecting... (attempt #{i})\n"
+      print "connecting #{port}... (attempt #{i})\n"
       conn = Mongo::Connection.new($host, port, :safe => $safe)
-      print "connecting... (attempt #{i}) done.\n"
+      print "connecting #{port}... (attempt #{i}) done.\n"
       return conn
     rescue
     end
