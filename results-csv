@@ -18,11 +18,12 @@
 # test-20110826143720_couchbase-2.0.0r-8-gdc68628/5000-0-100000-1-8-128.out:# 11. index-rebuilding... done. elapsed: 0.06121
 #
 
-print("test,software,ram-quota,replica-count,num-items,num-nodes,num-vbuckets,min-item-size,step,elapsed\n")
+print("test,software,ram-quota,# replicas,# items,# nodes,# vbuckets,min-item-size,step,elapsed\n")
 
 ARGF.each_line do |line|
   dir, slash, rest = line.partition('/')
   test, software = dir.split('_')
+  test = test.split('-')[-1]
   input, step_elapsed = rest.split('.out:#')
   inputs = input.split('-')
   step = step_elapsed.split('.')[1].strip
