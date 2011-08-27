@@ -92,7 +92,7 @@ step("reading-docs...",
      " min_value_size=#{$val_size}" \
      " num_items=#{$num_items}" \
      " max_ops=10000",
-     nil, $num_items)
+     nil, 10000)
 
 # ------------------------------------
 
