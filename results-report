@@ -44,7 +44,7 @@ lines.each do |line|
   dir = dir_input.split('/')[0..-2].join('/')
   input = dir_input.split('/')[-1]
   test, software = dir.split('_')
-  test = test.split('-')[-1]
+  software = software.split('/')[0]
   inputs = input.split('-')
   step = step_elapsed.split('.')[1].strip
   elapsed = step_elapsed.split(':')[-1].strip
