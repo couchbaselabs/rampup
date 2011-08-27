@@ -75,6 +75,11 @@ end
 sleep 15
 sleep $extra_sleep.to_i if $extra_sleep
 
+if $cli_kind[0] == 'couchdb'
+  run "curl -vX PUT http://127.0.0.1:5984/default"
+  sleep 1
+end
+
 run "curl -vX PUT http://127.0.0.1:5984/default/_design/rampup -d @rampup.json"
 
 # ------------------------------------
