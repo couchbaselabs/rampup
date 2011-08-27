@@ -22,8 +22,8 @@ ARGF.each_line do |line|
   test, software = dir.split('_')
   input, step_elapsed = rest.split('.out:#')
   inputs = input.split('-')
-  step = step_elapsed.split('.')[1]
-  elapsed = step_elapsed.split(':')[-1]
+  step = step_elapsed.split('.')[1].strip
+  elapsed = step_elapsed.split(':')[-1].strip
 
   # Output something like...
   #
