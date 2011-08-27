@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 
 # In the ./out directory...
-#   grep elapsed: */*.out | sort | ../results-csv
+#   grep elapsed: */*.out | ../results-csv
 #
 # The input (the output of grep) looks like...
 #
