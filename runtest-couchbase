@@ -18,7 +18,7 @@ load 'util.rb'
 $pkg           = ARGV[1]
 $pkg_base      = $pkg.split('/')[-1].split('-')[0] # Ex: 'couchbase'
 $cli_kind      = [$pkg_base, 11211]
-$cli_kind      = ['couchdb', 5984] if $cli_kind.include?('couchbase-single')
+$cli_kind      = ['couchdb', 5984] if $pkg.include?('couchbase-single')
 $ram_quota     = ARGV[2]
 $replica_count = ARGV[3]
 $num_items     = ARGV[4]
