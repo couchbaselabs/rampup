@@ -149,4 +149,5 @@ end
 
 # ------------------------------------
 
-step("done...")
+step("done...",
+     "sudo /etc/init.d/#{$pkg_base}-server stop")

@@ -196,5 +196,6 @@ coll.find({"last" => 0}).limit(10).each {|doc| doc }
 
 # ------------------------------------
 
-step("done...")
+step("done...",
+     "killall -9 mongos && killall -SIGINT mongod")
 
