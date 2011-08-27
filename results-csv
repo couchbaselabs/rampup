@@ -1,0 +1,33 @@
+#!/usr/bin/env ruby
+
+# In the ./out directory...
+#   grep elapsed: */*.out | results-csv > out.csv
+#
+# The input (the output of grep) looks like...
+#
+# test-20110826143720_couchbase-2.0.0r-8-gdc68628/5000-0-100000-1-8-128.out:# 1. preparing... test-20110826143720_couchbase-2.0.0r-8-gdc68628/5000-0-100000-1-8-128.out done. elapsed: 14.746645
+# test-20110826143720_couchbase-2.0.0r-8-gdc68628/5000-0-100000-1-8-128.out:# 2. installing... done. elapsed: 26.521519
+# test-20110826143720_couchbase-2.0.0r-8-gdc68628/5000-0-100000-1-8-128.out:# 3. configuring... done. elapsed: 15.268454
+# test-20110826143720_couchbase-2.0.0r-8-gdc68628/5000-0-100000-1-8-128.out:# 4. loading-docs... done. elapsed: 33.968438
+# test-20110826143720_couchbase-2.0.0r-8-gdc68628/5000-0-100000-1-8-128.out:# 5. reading-docs... done. elapsed: 3.452213
+# test-20110826143720_couchbase-2.0.0r-8-gdc68628/5000-0-100000-1-8-128.out:# 6. index-building... done. elapsed: 6.184657
+# test-20110826143720_couchbase-2.0.0r-8-gdc68628/5000-0-100000-1-8-128.out:# 7. index-accessing... done. elapsed: 92.243037
+# test-20110826143720_couchbase-2.0.0r-8-gdc68628/5000-0-100000-1-8-128.out:# 8. stopping... done. elapsed: 6.540078
+# test-20110826143720_couchbase-2.0.0r-8-gdc68628/5000-0-100000-1-8-128.out:# 9. restarting... done. elapsed: 0.261005
+# test-20110826143720_couchbase-2.0.0r-8-gdc68628/5000-0-100000-1-8-128.out:# 10. warming... done. elapsed: 2.157646
+# test-20110826143720_couchbase-2.0.0r-8-gdc68628/5000-0-100000-1-8-128.out:# 11. index-rebuilding... done. elapsed: 0.06121
+#
+ARGF.each_line do |line|
+  dir, rest = line.split('/')
+  test, software = dir.split('_')
+  input, step_elapsed = rest.split('.out:#')
+  inputs = input.split('-')
+  step = step_elapsed.split('.')[1]
+  elapsed = step_elapsed.split(':')[-1]
+
+  # Output something like...
+  #
+  #   test-20110826143720,couchbase-2.0.0r-8-gdc68628,5000,0,100000,1,8,128,preparing,14.746645,6781.20345339567
+  #
+  print("#{test},#{software},#{inputs.join(',')},#{step},#{elapsed},#{inputs[2].to_i / elapsed.to_f}\n")
+end
