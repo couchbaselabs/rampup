@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 
 # In the ./out directory...
-#   grep elapsed: */*.out | results-csv > out.csv
+#   grep elapsed: */*.out | ../results-csv > out.csv
 #
 # The input (the output of grep) looks like...
 #
@@ -18,7 +18,7 @@
 # test-20110826143720_couchbase-2.0.0r-8-gdc68628/5000-0-100000-1-8-128.out:# 11. index-rebuilding... done. elapsed: 0.06121
 #
 ARGF.each_line do |line|
-  dir, rest = line.split('/')
+  dir, slash, rest = line.partition('/')
   test, software = dir.split('_')
   input, step_elapsed = rest.split('.out:#')
   inputs = input.split('-')
@@ -27,7 +27,7 @@ ARGF.each_line do |line|
 
   # Output something like...
   #
-  #   test-20110826143720,couchbase-2.0.0r-8-gdc68628,5000,0,100000,1,8,128,preparing,14.746645,6781.20345339567
+  #   test-20110826143720,couchbase-2.0.0r-8-gdc68628,5000,0,100000,1,8,128,preparing,14.746645
   #
-  print("#{test},#{software},#{inputs.join(',')},#{step},#{elapsed},#{inputs[2].to_i / elapsed.to_f}\n")
+  print("#{test},#{software},#{inputs.join(',')},#{step},#{elapsed}\n")
 end
