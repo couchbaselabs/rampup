@@ -2,7 +2,7 @@
 
 # example: ./runtests $package \
 #            $ram_quotas,csv $replica_counts,csv \
-#            $num_items,csv $nodes,csv $vbucket-range $val-size-arr \
+#            $num_items,csv $nodes,csv $vbucket-range $val-size,csv \
 #            [$key=val,csv]
 #
 $pkg = pkg = ARGV[0] # Ex: "../couchbase-server-community_x86_64_2.0.0r-289-gc0dbb43.rpm"
