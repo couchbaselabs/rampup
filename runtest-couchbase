@@ -78,7 +78,7 @@ run "curl -vX PUT http://127.0.0.1:5984/default/_design/rampup -d @rampup.json"
 # ------------------------------------
 
 step("loading-docs...",
-     "./rampup-client memcached 127.0.0.1:11211" \
+     "./rampup-client #{$pkg_base} 127.0.0.1:11211" \
      " ratio_sets=1.0 ratio_creates=1.0" \
      " min_value_size=#{$val_size}" \
      " max_creates=#{$num_items} exit_after_creates=1",
@@ -87,7 +87,7 @@ step("loading-docs...",
 # ------------------------------------
 
 step("reading-docs...",
-     "./rampup-client memcached 127.0.0.1:11211" \
+     "./rampup-client #{$pkg_base} 127.0.0.1:11211" \
      " ratio_sets=0.0" \
      " min_value_size=#{$val_size}" \
      " num_items=#{$num_items}" \
@@ -125,7 +125,7 @@ while i < 100000
   sleep 2
   w = `/opt/#{$pkg_base}/bin/mbstats 127.0.0.1:11210 all | grep "ep_warmup:"`
   w = w.split(' ')[-1]
-  break if w == "1" or w == "true"
+  break if w.nil? or w == "1" or w == "true"
   i = i + 1
 end
 

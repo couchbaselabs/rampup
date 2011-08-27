@@ -1,12 +1,9 @@
 #!/usr/bin/env ruby
 
+require 'net/http'
+require 'uri'
 require 'digest/md5'
 require 'rubygems'
-
-# sudo gem install mongo
-# sudo gem install bson
-# sudo gem install bson_ext
-# sudo gem install SystemTimer
 
 $cfg_defaults = {
   :prefix => "",           # Prefix for every item key.
@@ -30,7 +27,7 @@ $cur_defaults = {
 }
 
 if ARGV.length < 2
-  print("usage: rampup-client <mongo|memcached> host:port [key=val[,key=val[...]]]\n")
+  print("usage: rampup-client <couchdb|mongo|memcached> host:port [key=val[ key=val[ ...]]]\n")
   print("\n")
   print("optional key=val's and their defaults are...\n")
   ($cfg_defaults.keys + $cur_defaults.keys).map {|x| x.to_s}.sort.each do |k|
@@ -89,6 +86,25 @@ print("\n")
 $body   = 'x' * cfg.min_value_size
 $suffix = "\"body\":\"#{$body}\"}"
 
+def gen_doc_hash(key_num, key_str, min_value_size)
+  return { "_id"     => key_str,
+           "key_num" => key_num,
+           "mid"     => key_str[-4..-2],
+           "last"    => key_str[-1..-1],
+           "body"    => $body
+         }
+end
+
+def gen_doc_string(key_num, key_str, min_value_size)
+  return "{\"key\":\"#{key_str}\"," \
+          "\"key_num\":#{key_num}," \
+          "\"mid\":\"#{key_str[-4..-2]}\"," \
+          "\"last\":\"#{key_str[-1..-1]}\"," +
+         $suffix
+end
+
+# ----------------------------------------------------------------
+
 class Store
   def connect(target)
   end
@@ -98,15 +114,40 @@ class Store
   end
 
   def gen_doc(key_num, key_str, min_value_size)
-    return "{\"key\":\"#{key_str}\"," \
-            "\"key_num\":#{key_num}," \
-            "\"mid\":\"#{key_str[-4..-2]}\"," \
-            "\"last\":\"#{key_str[-1..-1]}\"," +
-           $suffix
+    gen_doc_string(key_num, key_str, min_value_size)
   end
 
   def cmd_line_get(key_str)
     return key_str
+  end
+end
+
+class StoreCouchDB < Store
+  def connect(target) # host:port
+    @target = target
+    @http = Net::HTTP.new(target.split(':')[0],
+                          target.split(':')[1].to_i)
+  end
+
+  def command(cmd, key_num, key_str, data)
+    case cmd
+    when :get
+      uri = URI.parse("http://#{@target}/default/#{key_str}")
+      request = Net::HTTP::Get.new(uri.request_uri)
+      return @http.request(request)
+    when :set
+      uri = URI.parse("http://#{@target}/default/#{key_str}")
+      request = Net::HTTP::Put.new(uri.request_uri)
+      request.body = data
+      return @http.request(request)
+    else
+      print("ERROR: unknown StoreCouchDB cmd: #{cmd}\n")
+      exit(-1)
+    end
+  end
+
+  def cmd_line_get(key_str)
+    return "curl http://#{@target}/default/#{key_str}"
   end
 end
 
@@ -125,7 +166,7 @@ class StoreMemCache < Store
     when :set
       return @conn.set(key_str, data, 0, true) # Raw is true.
     else
-      print("ERROR: unknown StoreMemcached cmd: #{cmd}\n")
+      print("ERROR: unknown StoreMemCache cmd: #{cmd}\n")
       exit(-1)
     end
   end
@@ -151,7 +192,7 @@ class StoreDalli < Store
     when :set
       return @conn.set(key_str, data, nil, @opts)
     else
-      print("ERROR: unknown StoreMemcached cmd: #{cmd}\n")
+      print("ERROR: unknown StoreDalli cmd: #{cmd}\n")
       exit(-1)
     end
   end
@@ -162,6 +203,11 @@ class StoreDalli < Store
 end
 
 class StoreMongo < Store
+  # sudo gem install mongo
+  # sudo gem install bson
+  # sudo gem install bson_ext
+  # sudo gem install SystemTimer
+
   require 'mongo'
 
   def connect(target) # host:port/dbName/collName
@@ -189,12 +235,7 @@ class StoreMongo < Store
   end
 
   def gen_doc(key_num, key_str, min_value_size)
-    return { "_id"     => key_str,
-             "key_num" => key_num,
-             "mid"     => key_str[-4..-2],
-             "last"    => key_str[-1..-1],
-             "body"    => $body
-           }
+    gen_doc_hash(key_num, key_str, min_value_size)
   end
 end
 
@@ -318,6 +359,8 @@ end
 case ARGV[0].downcase
 when 'none'
   store = Store.new
+when 'couchdb'
+  store = StoreCouchDB.new
 when 'mongo'
   store = StoreMongo.new
 when 'memcached-memcache'
