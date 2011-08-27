@@ -23,7 +23,7 @@ steps = {}
 steps_arr = [] # Ordered by first seen step.
 
 ARGF.each_line do |line|
-  input, step_elapsed = line.split('.out:#')
+  dir_input, step_elapsed = line.split('.out:#')
   step = step_elapsed.split('.')[1].strip
 
   unless steps[step]
@@ -40,10 +40,11 @@ prev = curr = nil
 steps = {}
 
 lines.each do |line|
-  dir, slash, rest = line.partition('/')
+  dir_input, step_elapsed = line.split('.out:#')
+  dir = dir_input.split('/')[0..-2].join('/')
+  input = dir_input.split('/')[-1]
   test, software = dir.split('_')
   test = test.split('-')[-1]
-  input, step_elapsed = rest.split('.out:#')
   inputs = input.split('-')
   step = step_elapsed.split('.')[1].strip
   elapsed = step_elapsed.split(':')[-1].strip
