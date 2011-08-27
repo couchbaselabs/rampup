@@ -18,9 +18,28 @@
 # test-20110826143720_couchbase-2.0.0r-8-gdc68628/5000-0-100000-1-8-128.out:# 11. index-rebuilding... done. elapsed: 0.06121
 #
 
-print("test,software,ram-quota,replicas,items,nodes,vbuckets,min-item-size,step,elapsed\n")
+lines = []
+steps = {}
+steps_arr = [] # Ordered by first seen step.
 
 ARGF.each_line do |line|
+  input, step_elapsed = line.split('.out:#')
+  step = step_elapsed.split('.')[1].strip
+
+  unless steps[step]
+    steps[step] = true
+    steps_arr << step
+  end
+
+  lines << line
+end
+
+print("test,software,ram-quota,replicas,items,nodes,vbuckets,min-item-size,#{steps_arr.join(',')}\n")
+
+prev = curr = nil
+steps = {}
+
+lines.each do |line|
   dir, slash, rest = line.partition('/')
   test, software = dir.split('_')
   test = test.split('-')[-1]
@@ -31,7 +50,24 @@ ARGF.each_line do |line|
 
   # Output something like...
   #
-  #   test-20110826143720,couchbase-2.0.0r-8-gdc68628,5000,0,100000,1,8,128,preparing,14.746645
+  #   test-20110826143720,couchbase-2.0.0r-8-gdc68628,5000,0,100000,1,8,128,STEP-1-elapsed,STEP-2-elapsed,STEP-3-elapsed
   #
-  print("#{test},#{software},#{inputs.join(',')},#{step},#{elapsed}\n")
+  curr = "#{test},#{software},#{inputs.join(',')}"
+
+  if prev and prev != curr
+    print("#{prev}")
+    steps_arr.each {|s| print(",#{steps[s]}") }
+    print("\n")
+
+    steps = {}
+  end
+
+  prev = curr
+
+  steps[step] = elapsed
 end
+
+print("#{prev}")
+steps_arr.each {|s| print(",#{steps[s]}") }
+print("\n")
+
