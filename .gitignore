@@ -4,4 +4,5 @@ out-*
 *.out
 erl_crash.dump
 mongodb-*
+*.rpm
 *.tgz
