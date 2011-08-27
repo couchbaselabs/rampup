@@ -17,6 +17,8 @@ load 'util.rb'
 
 $pkg           = ARGV[1]
 $pkg_base      = $pkg.split('/')[-1].split('-')[0] # Ex: 'couchbase'
+$cli_kind      = [$pkg_base, 11211]
+$cli_kind      = ['couchdb', 5984] if $cli_kind.include?('couchbase-single')
 $ram_quota     = ARGV[2]
 $replica_count = ARGV[3]
 $num_items     = ARGV[4]
@@ -78,7 +80,7 @@ run "curl -vX PUT http://127.0.0.1:5984/default/_design/rampup -d @rampup.json"
 # ------------------------------------
 
 step("loading-docs...",
-     "./rampup-client #{$pkg_base} 127.0.0.1:11211" \
+     "./rampup-client #{$cli_kind[0]} 127.0.0.1:#{$cli_kind[1]}" \
      " ratio_sets=1.0 ratio_creates=1.0" \
      " min_value_size=#{$val_size}" \
      " max_creates=#{$num_items} exit_after_creates=1",
@@ -87,7 +89,7 @@ step("loading-docs...",
 # ------------------------------------
 
 step("reading-docs...",
-     "./rampup-client #{$pkg_base} 127.0.0.1:11211" \
+     "./rampup-client #{$cli_kind[0]} 127.0.0.1:#{$cli_kind[1]}" \
      " ratio_sets=0.0" \
      " min_value_size=#{$val_size}" \
      " num_items=#{$num_items}" \
