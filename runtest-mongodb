@@ -138,6 +138,11 @@ step("loading-docs...",
 
 # ------------------------------------
 
+step("loading-persisted...",
+     "#{$mongo_base}/bin/mongo 127.0.0.1:27017/admin fsync.js")
+
+# ------------------------------------
+
 step("reading-docs...",
      "./rampup-client mongo 127.0.0.1:27017" \
      " ratio_sets=0.0" \

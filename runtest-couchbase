@@ -93,6 +93,19 @@ step("loading-docs...",
 
 # ------------------------------------
 
+step("loading-persisted...")
+
+i = 0
+while i < 100000
+  w = `/opt/#{$pkg_base}/bin/mbstats 127.0.0.1:11210 all | egrep "ep_queue_size|ep_flusher_todo"`
+  w = w.strip.split(/[\s\n\t]+/).select {|x| !x.include?(':') and x != '0' }
+  break if w.empty?
+  i = i + 1
+  sleep 0.1
+end
+
+# ------------------------------------
+
 step("reading-docs...",
      "./rampup-client #{$cli_kind[0]} 127.0.0.1:#{$cli_kind[1]}" \
      " ratio_sets=0.0" \
