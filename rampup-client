@@ -16,6 +16,7 @@ $cfg_defaults = {
   :ratio_hot => 0.2,       # Fraction of items to have as a hot item subset.
   :ratio_hot_sets => 0.95, # Fraction of SET's that hit the hot item subset.
   :ratio_hot_gets => 0.95, # Fraction of GET's that hit the hot item subset.
+  :bulk_load => 0,         # Use bulk load optimization if appropriate.
   :exit_after_creates => 0 # Exit after max_creates is reached.
 }
 
@@ -95,8 +96,8 @@ def gen_doc_hash(key_num, key_str, min_value_size)
          }
 end
 
-def gen_doc_string(key_num, key_str, min_value_size)
-  return "{\"key\":\"#{key_str}\"," \
+def gen_doc_string(key_num, key_str, min_value_size, key_name = "key")
+  return "{\"#{key_name}\":\"#{key_str}\"," \
           "\"key_num\":#{key_num}," \
           "\"mid\":\"#{key_str[-4..-2]}\"," \
           "\"last\":\"#{key_str[-1..-1]}\"," +
@@ -109,8 +110,11 @@ class Store
   def connect(target)
   end
 
-  def command(cmd, key_num, key_str, data)
+  def command(cmd, key_num, key_str, data, bulk_load = false)
     out("#{cmd} #{key_num} #{key_str} #{data}\n")
+  end
+
+  def flush()
   end
 
   def gen_doc(key_num, key_str, min_value_size)
@@ -127,23 +131,45 @@ class StoreCouchDB < Store
     @target = target
     @http = Net::HTTP.new(target.split(':')[0],
                           target.split(':')[1].to_i)
+    @bulk = []
   end
 
-  def command(cmd, key_num, key_str, data)
+  def command(cmd, key_num, key_str, data, bulk_load = false)
     case cmd
     when :get
       uri = URI.parse("http://#{@target}/default/#{key_str}")
       request = Net::HTTP::Get.new(uri.request_uri)
       return @http.request(request)
     when :set
-      uri = URI.parse("http://#{@target}/default/#{key_str}")
-      request = Net::HTTP::Put.new(uri.request_uri)
-      request.body = data
-      return @http.request(request)
+      if bulk_load
+        @bulk << data
+        if @bulk.length > 100
+          flush
+        end
+      else
+        uri = URI.parse("http://#{@target}/default/#{key_str}")
+        request = Net::HTTP::Put.new(uri.request_uri)
+        request.body = data
+        return @http.request(request)
+      end
     else
       print("ERROR: unknown StoreCouchDB cmd: #{cmd}\n")
       exit(-1)
     end
+  end
+
+  def flush()
+    uri = URI.parse("http://#{@target}/default/_bulk_docs")
+    request = Net::HTTP::Post.new(uri.request_uri)
+    request.body = "{\"docs\":[#{@bulk.join(',')}]}"
+
+    @bulk = []
+
+    return @http.request(request)
+  end
+
+  def gen_doc(key_num, key_str, min_value_size)
+    gen_doc_string(key_num, key_str, min_value_size, key_name = "_id")
   end
 
   def cmd_line_get(key_str)
@@ -159,7 +185,7 @@ class StoreMemCache < Store
     @conn   = MemCache.new([target])
   end
 
-  def command(cmd, key_num, key_str, data)
+  def command(cmd, key_num, key_str, data, bulk_load = false)
     case cmd
     when :get
       return @conn.get(key_str)
@@ -185,7 +211,7 @@ class StoreDalli < Store
     @opts   = { :raw => true }
   end
 
-  def command(cmd, key_num, key_str, data)
+  def command(cmd, key_num, key_str, data, bulk_load = false)
     case cmd
     when :get
       return @conn.get(key_str)
@@ -222,7 +248,7 @@ class StoreMongo < Store
     @coll = @db.collection(@collName)
   end
 
-  def command(cmd, key_num, key_str, data)
+  def command(cmd, key_num, key_str, data, bulk_load = false)
     case cmd
     when :get
       return @coll.find_one({"_id" => key_str})
@@ -242,6 +268,10 @@ end
 # ----------------------------------------------------------------
 
 def run(cfg, cur, store)
+  bulk_load = cfg.bulk_load and
+              cfg.ratio_set >= 1.0 and
+              cfg.ratio_creates >= 1.0
+
   while true
     num_ops = cur.num_gets + cur.num_sets
 
@@ -257,12 +287,15 @@ def run(cfg, cur, store)
         next_cmd(cfg, cur, store)
 
     cmd_beg = Time.new
-
-    p store.command(req_cmd, req_key_num, req_key_str, req_data)
-
+    store.command(req_cmd, req_key_num, req_key_str, req_data, bulk_load)
     cmd_end = Time.new
     cmd_amt = cmd_end - cmd_beg
   end
+
+  cmd_beg = Time.new
+  store.flush()
+  cmd_end = Time.new
+  cmd_amt = cmd_end - cmd_beg
 end
 
 def next_cmd(cfg, cur, store)
