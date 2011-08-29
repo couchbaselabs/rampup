@@ -73,7 +73,7 @@ cur = Cur.new
   end
 end
 
-if cfg.ratio_set < 1.0 or
+if cfg.ratio_sets < 1.0 or
    cfg.ratio_creates < 1.0
   cfg.bulk_load_batch = 1 # Use bulk_load_batch optimization only if 100% creates.
 end
