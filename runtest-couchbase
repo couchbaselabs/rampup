@@ -151,7 +151,7 @@ while i < 100000
 end
 
 w = `/opt/#{$pkg_base}/bin/mbstats 127.0.0.1:11210 all | grep "ep_warmup_time:"`
-w = w.split(' ')[-1]
+w = (w.split(' ')[-1] || "0").to_i
 
 # ------------------------------------
 
