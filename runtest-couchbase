@@ -172,3 +172,5 @@ end
 
 step("done...",
      "sudo /etc/init.d/#{$pkg_base}-server stop")
+
+run("killall -9 beam.smp")
