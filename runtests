@@ -65,7 +65,10 @@ def test_name(pkg, ram_quota, replica_count, num_items, nodes, vbuckets, val_siz
   pkg = pkg.split('/')[-1]
   # Ex: 'couchbase-server-community_x86_64_2.0.0r-289-gc0dbb43.rpm'
 
-  pkg = pkg.split('-')[0] + '-' + pkg.split('_')[-1].split('.')[0..-2].join('.')
+  prefix = pkg.split('-')[0]
+  prefix = pkg.split('-server-')[0] if pkg.split('-server-').length > 1
+
+  pkg = prefix + '-' + pkg.split('_')[-1].split('.')[0..-2].join('.')
   # Ex: 'couchbase-2.0.0r-289-gc0dbb43'
 
   return ["test-#{$start}_#{pkg}",
