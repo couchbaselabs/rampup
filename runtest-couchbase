@@ -88,7 +88,8 @@ step("loading-docs...",
      "./rampup-client #{$cli_kind[0]} 127.0.0.1:#{$cli_kind[1]}" \
      " ratio_sets=1.0 ratio_creates=1.0" \
      " min_value_size=#{$val_size}" \
-     " max_creates=#{$num_items} exit_after_creates=1",
+     " max_creates=#{$num_items} exit_after_creates=1" \
+     " bulk_load_batch=100",
      nil, $num_items)
 
 # ------------------------------------

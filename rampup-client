@@ -16,7 +16,8 @@ $cfg_defaults = {
   :ratio_hot => 0.2,       # Fraction of items to have as a hot item subset.
   :ratio_hot_sets => 0.95, # Fraction of SET's that hit the hot item subset.
   :ratio_hot_gets => 0.95, # Fraction of GET's that hit the hot item subset.
-  :bulk_load => 0,         # Use bulk load optimization if appropriate.
+  :bulk_load_batch => 1,   # When > 1, use batched bulk load optimization,
+                           # if appropriate, flushing after this many inserts.
   :exit_after_creates => 0 # Exit after max_creates is reached.
 }
 
@@ -72,6 +73,11 @@ cur = Cur.new
   end
 end
 
+if cfg.ratio_set < 1.0 or
+   cfg.ratio_creates < 1.0
+  cfg.bulk_load_batch = 1 # Use bulk_load_batch optimization only if 100% creates.
+end
+
 ($cfg_defaults.keys).map {|x| x.to_s}.sort.each do |k|
   print("  #{k.ljust(20)} = #{cfg.send(k.to_sym)}\n")
 end
@@ -110,7 +116,7 @@ class Store
   def connect(target)
   end
 
-  def command(cmd, key_num, key_str, data, bulk_load = false)
+  def command(cmd, key_num, key_str, data, bulk_load_batch = 1)
     out("#{cmd} #{key_num} #{key_str} #{data}\n")
   end
 
@@ -134,16 +140,16 @@ class StoreCouchDB < Store
     @bulk = []
   end
 
-  def command(cmd, key_num, key_str, data, bulk_load = false)
+  def command(cmd, key_num, key_str, data, bulk_load_batch = 1)
     case cmd
     when :get
       uri = URI.parse("http://#{@target}/default/#{key_str}")
       request = Net::HTTP::Get.new(uri.request_uri)
       return @http.request(request)
     when :set
-      if bulk_load
+      if bulk_load_batch > 1
         @bulk << data
-        if @bulk.length > 100
+        if @bulk.length > bulk_load_batch
           flush
         end
       else
@@ -185,7 +191,7 @@ class StoreMemCache < Store
     @conn   = MemCache.new([target])
   end
 
-  def command(cmd, key_num, key_str, data, bulk_load = false)
+  def command(cmd, key_num, key_str, data, bulk_load_batch = 1)
     case cmd
     when :get
       return @conn.get(key_str)
@@ -211,7 +217,7 @@ class StoreDalli < Store
     @opts   = { :raw => true }
   end
 
-  def command(cmd, key_num, key_str, data, bulk_load = false)
+  def command(cmd, key_num, key_str, data, bulk_load_batch = 1)
     case cmd
     when :get
       return @conn.get(key_str)
@@ -248,7 +254,7 @@ class StoreMongo < Store
     @coll = @db.collection(@collName)
   end
 
-  def command(cmd, key_num, key_str, data, bulk_load = false)
+  def command(cmd, key_num, key_str, data, bulk_load_batch = 1)
     case cmd
     when :get
       return @coll.find_one({"_id" => key_str})
@@ -268,10 +274,6 @@ end
 # ----------------------------------------------------------------
 
 def run(cfg, cur, store)
-  bulk_load = cfg.bulk_load and
-              cfg.ratio_set >= 1.0 and
-              cfg.ratio_creates >= 1.0
-
   while true
     num_ops = cur.num_gets + cur.num_sets
 
@@ -287,7 +289,7 @@ def run(cfg, cur, store)
         next_cmd(cfg, cur, store)
 
     cmd_beg = Time.new
-    store.command(req_cmd, req_key_num, req_key_str, req_data, bulk_load)
+    store.command(req_cmd, req_key_num, req_key_str, req_data, cfg.bulk_load_batch)
     cmd_end = Time.new
     cmd_amt = cmd_end - cmd_beg
   end
