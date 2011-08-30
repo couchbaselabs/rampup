@@ -1,0 +1,9 @@
+#!/usr/bin/env ruby
+
+require 'rubygems'
+require 'sinatra'
+
+get '/results-report.csv' do
+  `grep elapsed: out-*/*/*.out | ./results-report`
+end
+
