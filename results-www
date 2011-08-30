@@ -4,6 +4,12 @@ require 'rubygems'
 require 'sinatra'
 
 get '/results-report.csv' do
-  `grep elapsed: out-*/*/*.out | ./results-report`
+  [200, {'Content-Type' => 'text/plain'},
+   `grep elapsed: out-*/*/*.out | ./results-report`]
+end
+
+get '/runs' do
+  [200, {'Content-Type' => 'text/plain'},
+   `ls -al out-*`]
 end
 
