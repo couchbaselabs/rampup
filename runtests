@@ -248,6 +248,10 @@ def teardown_cluster_existing(pkg_in, ram_quota, replica_count,
   hosts.each do |host|
     run "#{$ssh} #{user}@#{host} sudo killall -9 memcached"
     run "#{$ssh} #{user}@#{host} sudo /etc/init.d/#{pkg_base}-server stop"
+    run "#{$ssh} #{user}@#{host} sudo killall -9 heart"
+    run "#{$ssh} #{user}@#{host} sudo killall -9 couchdb"
+    run "#{$ssh} #{user}@#{host} sudo killall -9 beam.smp"
+    run "#{$ssh} #{user}@#{host} sudo killall -9 epmd"
     run "#{$ssh} #{user}@#{host} sudo rpm -e #{pkg_base}-server"
     run "#{$ssh} #{user}@#{host} sudo rm -rf /opt/#{pkg_base} #{pkg_in}"
   end
