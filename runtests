@@ -43,7 +43,9 @@ opts = {
   'cluster.package-url-base' => 'http://packages.northscale.com/latestbuilds',
   'stack.PackageVerBase' => '2.0.0',
   'stack.KeyName' => 'steveyen-key',
-  'stack.InstanceType' => 'm1.large'
+  'stack.InstanceType' => 'm1.large',
+  'wget' => 'y',
+  'rpm' => 'y'
 }
 
 (ARGV[7] || "").split(',').each {|x|
@@ -202,8 +204,14 @@ def prepare_cluster_existing(pkg_in, ram_quota, replica_count,
   while i < nodes
     host = hosts[i - 1]
 
-    run "#{$ssh} #{user}@#{host} sudo wget -O #{pkg_in} #{pkg_url}"
-    run "#{$ssh} #{user}@#{host} sudo rpm -i #{pkg_in}"
+    if opts['wget'] == 'y'
+      run "#{$ssh} #{user}@#{host} sudo wget -O #{pkg_in} #{pkg_url}"
+    end
+
+    if opts['rpm'] == 'y'
+      run "#{$ssh} #{user}@#{host} sudo rpm -i #{pkg_in}"
+    end
+
     run "#{$ssh} #{user}@#{host} rm -f after-install"
     run "#{$ssh} #{user}@#{host} wget https://raw.github.com/couchbaselabs/rampup/master/after-install"
     run "#{$ssh} #{user}@#{host} chmod a+x after-install"
@@ -252,8 +260,14 @@ def teardown_cluster_existing(pkg_in, ram_quota, replica_count,
     run "#{$ssh} #{user}@#{host} sudo killall -9 couchdb"
     run "#{$ssh} #{user}@#{host} sudo killall -9 beam.smp"
     run "#{$ssh} #{user}@#{host} sudo killall -9 epmd"
-    run "#{$ssh} #{user}@#{host} sudo rpm -e #{pkg_base}-server"
-    run "#{$ssh} #{user}@#{host} sudo rm -rf /opt/#{pkg_base} #{pkg_in}"
+
+    if opts['rpm'] == 'y'
+      run "#{$ssh} #{user}@#{host} sudo rpm -e #{pkg_base}-server"
+    end
+
+    if opts['wget'] == 'y'
+      run "#{$ssh} #{user}@#{host} sudo rm -rf /opt/#{pkg_base} #{pkg_in}"
+    end
   end
 end
 
