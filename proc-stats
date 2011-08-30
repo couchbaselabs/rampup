@@ -1,25 +1,9 @@
-#!/usr/bin/env python
+#!/usr/bin/env ruby
 
-import sys
+pattern = ARGV[0] || "memcached|beam.smp|couchjs|moxi"
 
-try:
-    import json
-except ImportError:
-    import simplejson as json
-
-import itertools
-
-l = open("/proc/self/stat").readline()
-
-fields = ('pid comm state ppid pgrp session tty_nr tpgid flags minflt '
-          'cminflt majflt cmajflt utime stime cutime cstime priority '
-          'nice num_threads itrealvalue starttime vsize rss rsslim '
-          'startcode endcode startstack kstkesp kstkeip signal blocked '
-          'sigignore sigcatch wchan nswap cnswap exit_signal '
-          'processor rt_priority policy delayacct_blkio_ticks '
-          'guest_time cguest_time ').split(' ')
-
-d = dict(zip(fields, l.split(' ')))
-
-json.dump(d, sys.stdout, indent=True)
+while true
+  sleep 1
+  print `egrep "#{pattern}" /proc/*/stat`
+end
 
