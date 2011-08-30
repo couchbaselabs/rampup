@@ -11,7 +11,7 @@ except ImportError:
 
 import couchdb
 
-def process_file(db, test, filename, run, build, ram_quota, replica_count, num_items, num_nodes, num_vbuckets, val_size):
+def process_file(db, upload, test, filename, run, build, ram_quota, replica_count, num_items, num_nodes, num_vbuckets, val_size):
 
     details = []
 
@@ -26,7 +26,8 @@ def process_file(db, test, filename, run, build, ram_quota, replica_count, num_i
 
             details.append({ 'step': step, 'label': label, 'elapsed': elapsed })
 
-    db.update([{'test': test, 'filename': filename, 'run': run, 'build': build,
+    db.update([{'upload': upload, 'test': test,
+                'filename': filename, 'run': run, 'build': build,
                 'ram_quota': ram_quota, 'replica_count': replica_count,
                 'items': num_items, 'nodes': num_nodes,
                 'vbuckets': num_vbuckets, 'val_size': val_size,
@@ -35,13 +36,18 @@ def process_file(db, test, filename, run, build, ram_quota, replica_count, num_i
 if __name__ == '__main__':
 
     if len(sys.argv) < 4:
-        print("usage: " + sys.argv[0] + " http://HOST:5984/COUCH_DBNAME TEST_NAME OUT0 [OUT1 ... OUTN]\n")
-        print("example: ./storeOutput.py http://127.0.0.1:5984/viewperf 289-physical out-20110815090708/test-20110815090708_couchbase-2.0.0r-289-gc0dbb43/*\n")
+        print("usage: " + sys.argv[0] + " http://HOST:5984/COUCH_DBNAME UPLOAD_TEST_NAME OUT0 [OUT1 ... OUTN]\n")
+        print("example: " + sys.argv[0] + " http://127.0.0.1:5984/viewperf 289-physical out-20110815090708/test-20110815090708_couchbase-2.0.0r-289-gc0dbb43/*\n")
         print("Cooks the output files from runtests and uploads to couchdb.\n")
+        print("Try to make the UPLOAD_TEST_NAME unique across uploads.\n")
         exit('ERROR: not enough parameters')
 
     couch = sys.argv[1] # Ex: "http://localhost:5984/viewperf"
     test  = sys.argv[2] # Ex: "289-physical"
+
+    upload = datetime.datetime.now().strftime("%Y%m%d%H%M%S") + "-" + test
+
+    print("upload: " + upload + "\n")
 
     couch_server = '/'.join(couch.split('/')[0:-1]) # Ex: 'http://localhost:5984/'
     couch_dbname = couch.split('/')[-1]             # Ex: 'viewperf'
@@ -70,6 +76,6 @@ if __name__ == '__main__':
         print(run, build,
               ram_quota, replica_count, num_items, num_nodes, num_vbuckets, val_size)
 
-        process_file(db, test, f, run, build,
+        process_file(db, upload, test, f, run, build,
                      ram_quota, replica_count, num_items, num_nodes, num_vbuckets, val_size)
 
