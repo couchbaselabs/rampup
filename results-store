@@ -55,7 +55,7 @@ if __name__ == '__main__':
 
     if len(sys.argv) < 4:
         print("usage: " + sys.argv[0] + " http://HOST:5984/COUCH_DBNAME UPLOAD_TEST_NAME OUT0 [OUT1 ... OUTN]\n")
-        print("example: " + sys.argv[0] + " http://127.0.0.1:5984/viewperf 289-physical out-20110815090708/test-20110815090708_couchbase-2.0.0r-289-gc0dbb43/*\n")
+        print("example: " + sys.argv[0] + " http://127.0.0.1:5984/viewperf 289-physical out-*/test-*/*.out\n")
         print("Cooks the output files from runtests and uploads to couchdb.\n")
         print("Try to make the UPLOAD_TEST_NAME unique across uploads.\n")
         exit('ERROR: not enough parameters')
