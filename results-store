@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import re
+import os
 import sys
 import time
 import datetime
@@ -14,6 +15,7 @@ import couchdb
 
 def process_file(db, upload, test, filename, run, build, ram_quota, replica_count, num_items, num_nodes, num_vbuckets, val_size):
 
+    steps = []
     details = []
 
     for line in open(filename):
@@ -25,14 +27,29 @@ def process_file(db, upload, test, filename, run, build, ram_quota, replica_coun
             label   = parts[2].rstrip('.')
             elapsed = float(parts[-1])
 
+            steps.append(step)
             details.append({ 'step': step, 'label': label, 'elapsed': elapsed })
 
-    db.update([{'upload': upload, 'test': test,
-                'filename': filename, 'run': run, 'build': build,
-                'ram_quota': ram_quota, 'replica_count': replica_count,
-                'items': num_items, 'nodes': num_nodes,
-                'vbuckets': num_vbuckets, 'val_size': val_size,
-                'details': details}])
+    doc = { 'upload': upload, 'test': test,
+            'filename': filename, 'run': run, 'build': build,
+            'ram_quota': ram_quota, 'replica_count': replica_count,
+            'items': num_items, 'nodes': num_nodes,
+            'vbuckets': num_vbuckets, 'val_size': val_size,
+            'details': details
+          }
+
+    id, rev = db.save(doc)
+
+    for step in steps:
+        x = filename + "-" + step + ".proc-stats"
+        z = x + ".bz2"
+
+        if not os.path.exists(z):
+            if os.path.exists(x):
+                os.system("bzip2 " + x)
+
+        if os.path.exists(z):
+            db.put_attachment(doc, z)
 
 if __name__ == '__main__':
 
