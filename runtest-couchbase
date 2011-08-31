@@ -148,16 +148,16 @@ if File.exists?("/opt/#{$pkg_base}/bin/mbstats")
   i = 0
   while i < 100000
     sleep 2
-    w = `/opt/#{$pkg_base}/bin/mbstats 127.0.0.1:11210 all | grep "ep_warmup:"`
+    w = `/opt/#{$pkg_base}/bin/mbstats 127.0.0.1:11210 all | grep "ep_warmup_thread:"`
     w = w.split(' ')[-1]
-    break if w == "1" or w == "true"
+    break if w == "complete"
     i = i + 1
   end
 
   proc_stats_end()
 
   w = `/opt/#{$pkg_base}/bin/mbstats 127.0.0.1:11210 all | grep "ep_warmup_time:"`
-  w = (w.split(' ')[-1] || "0").to_i / 1000 # ep_warmup_time is in milliseconds.
+  w = (w.split(' ')[-1] || "0").to_i / 1000000 # ep_warmup_time is in microseconds.
 end
 
 # ------------------------------------
