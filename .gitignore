@@ -1,8 +1,9 @@
-.DS_Store
-out
-out-*
 *.out
-erl_crash.dump
-mongodb-*
 *.rpm
 *.tgz
+*~
+.DS_Store
+erl_crash.dump
+mongodb-*
+out
+out-*
