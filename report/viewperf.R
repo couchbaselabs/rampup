@@ -62,12 +62,15 @@ parseCPUCounters <- function(lines) {
   ## Numberize the datas
   s[,-c(1:3)] <- as.numeric(as.matrix(s[,-c(1:3)]))
 
+  ## List of fields for which we want to compute deltas.
+  counters <- c('utime', 'stime', 'cutime', 'cstime',
+                'minflt', 'cminflt', 'majflt', 'cmajflt')
+
   ## Number the lines.
   s$rowid <- 1:nrow(procstuff)
   for (comm in levels(s$comm)) {
     s[s$comm == comm,]$rowid <- 1:nrow(s[s$comm == comm,])
 
-    counters <- c('utime', 'stime', 'cutime', 'cstime')
     for (counter in counters) {
       name <- paste(counter, '_diff', sep='')
       counterdiff <- diff(s[s$comm == comm,counter])
