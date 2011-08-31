@@ -118,8 +118,7 @@ step("reading-docs...",
 # ------------------------------------
 
 step("index-building...",
-     "/usr/bin/time -a -o #{$out_file}" \
-     " curl -v http://127.0.0.1:5984/default/_design/rampup/_view/last?limit=10")
+     "curl -v http://127.0.0.1:5984/default/_design/rampup/_view/last?limit=10")
 
 # ------------------------------------
 

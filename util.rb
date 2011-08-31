@@ -43,11 +43,13 @@ def step(mesg, cmd=nil, elapsed=nil, work=nil)
   $mesg_prev = mesg
   $work_prev = work
 
-  time(cmd) if cmd
+  time(cmd, mesg) if cmd
 end
 
-def time(cmd)
-  system("./proc-stats \"#{$top_patt}\" > #{$out_file}.proc-stats &")
+def time(cmd, mesg = "unknown")
+  step = mesg.gsub(".", "").split(' ')[0]
+
+  system("./proc-stats \"#{$top_patt}\" > #{$out_file}-#{step}.proc-stats &")
 
   run cmd
 
