@@ -78,6 +78,13 @@ parseCPUCounters <- function(lines) {
   s
 }
 
+readCPUDataBZ <- function(filename) {
+  f <- bzfile(filename, "r")
+  data <- parseCPUCounters(readLines(f))
+  close(f)
+  data
+}
+
 meltCPUStats <- function(cpudf) {
   melt(cpudf, id.vars=c('pid', 'comm', 'state', 'rowid'))
 }
