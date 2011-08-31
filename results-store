@@ -49,7 +49,7 @@ def process_file(db, upload, test, filename, run, build, ram_quota, replica_coun
                 os.system("bzip2 " + x)
 
         if os.path.exists(z):
-            db.put_attachment(doc, z)
+            db.put_attachment(doc, z, z)
 
 if __name__ == '__main__':
 
