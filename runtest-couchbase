@@ -140,17 +140,21 @@ step("restarting...",
 
 step("warming...")
 
-i = 0
-while i < 100000
-  sleep 2
-  w = `/opt/#{$pkg_base}/bin/mbstats 127.0.0.1:11210 all | grep "ep_warmup:"`
-  w = w.split(' ')[-1]
-  break if w.nil? or w == "1" or w == "true"
-  i = i + 1
-end
+w = 0
 
-w = `/opt/#{$pkg_base}/bin/mbstats 127.0.0.1:11210 all | grep "ep_warmup_time:"`
-w = (w.split(' ')[-1] || "0").to_i / 1000 # ep_warmup_time is in milliseconds.
+if File.exists?("/opt/#{$pkg_base}/bin/mbstats")
+  i = 0
+  while i < 100000
+    sleep 2
+    w = `/opt/#{$pkg_base}/bin/mbstats 127.0.0.1:11210 all | grep "ep_warmup:"`
+    w = w.split(' ')[-1]
+    break if w == "1" or w == "true"
+    i = i + 1
+  end
+
+  w = `/opt/#{$pkg_base}/bin/mbstats 127.0.0.1:11210 all | grep "ep_warmup_time:"`
+  w = (w.split(' ')[-1] || "0").to_i / 1000 # ep_warmup_time is in milliseconds.
+end
 
 # ------------------------------------
 
