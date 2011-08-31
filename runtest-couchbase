@@ -9,7 +9,7 @@ end
 
 $test_name = ARGV[0]
 $top_user  = "root"
-$top_patt  = "beam.smp"
+$top_patt  = "beam.smp|memcached|moxi|couchjs"
 
 load 'util.rb'
 

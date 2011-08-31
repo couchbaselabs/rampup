@@ -9,7 +9,7 @@ end
 
 $test_name = ARGV[0]
 $top_user  = "root"
-$top_patt  = "mongod"
+$top_patt  = "mongod|mongos"
 
 load 'util.rb'
 

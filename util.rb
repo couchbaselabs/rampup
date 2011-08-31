@@ -47,11 +47,13 @@ def step(mesg, cmd=nil, elapsed=nil, work=nil)
 end
 
 def time(cmd)
-  system("top -U #{$top_user} | egrep #{$top_patt} > /tmp/top.out &")
+  system("./proc-stats \"#{$top_patt}\" > #{$out_file}.proc-stats &")
 
   run cmd
 
-  `killall top`
-  `tail -n 50 /tmp/top.out | head -n 10 >> #{$out_file}`
+  # Similar to killall...
+  #
+  x = `grep -l proc-stats /proc/*/cmdline`
+  x.split("\n").map {|c| `kill #{c.split('/')[2]}` }
 end
 
