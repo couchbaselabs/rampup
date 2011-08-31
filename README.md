@@ -76,5 +76,19 @@ If you also want to test mongo...
     gem install bson_ext
     gem install SystemTimer
 
+# R
 
+Visit r-project.org / CRAN.
+
+R 2.13.1
+
+Favor R64.app
+
+install.packages(c("rjson", "ggplot2"))
+
+require(ggplot2)
+
+x <- getUpload(head(listUploads(), 1)[[1]])
+
+unique(x$label)
 

@@ -67,7 +67,7 @@ parseCPUCounters <- function(lines) {
                 'minflt', 'cminflt', 'majflt', 'cmajflt')
 
   ## Number the lines.
-  s$rowid <- 1:nrow(procstuff)
+  s$rowid <- 1:nrow(s)
   for (comm in levels(s$comm)) {
     s[s$comm == comm,]$rowid <- 1:nrow(s[s$comm == comm,])
 
