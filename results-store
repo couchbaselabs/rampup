@@ -18,7 +18,9 @@ def process_file(db, upload, test, filename, run, build, ram_quota, replica_coun
     labels = []
     details = []
 
-    for line in open(filename):
+    f = open(filename)
+
+    for line in f:
         if line.find('done. elapsed: ') > 0:
             # Example line == "# 6. view-building... done. elapsed: 0.10278"
             #
@@ -29,6 +31,8 @@ def process_file(db, upload, test, filename, run, build, ram_quota, replica_coun
 
             labels.append(label)
             details.append({ 'step': step, 'label': label, 'elapsed': elapsed })
+
+    f.close()
 
     doc = { 'upload': upload, 'test': test,
             'filename': filename, 'run': run, 'build': build,
@@ -49,7 +53,9 @@ def process_file(db, upload, test, filename, run, build, ram_quota, replica_coun
                 os.system("bzip2 " + x)
 
         if os.path.exists(z):
-            db.put_attachment(doc, z, z)
+            f = file.open(z)
+            db.put_attachment(doc, f)
+            f.close()
 
 if __name__ == '__main__':
 
