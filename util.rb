@@ -43,16 +43,26 @@ def step(mesg, cmd=nil, elapsed=nil, work=nil)
   $mesg_prev = mesg
   $work_prev = work
 
-  time(cmd, mesg) if cmd
+  time(cmd) if cmd
 end
 
-def time(cmd, mesg = "unknown")
-  step = mesg.gsub(".", "").split(' ')[0]
+def time(cmd)
+  proc_stats_start()
+
+  run(cmd)
+
+  proc_stats_end()
+end
+
+def proc_stats_start()
+  return unless $mesg_prev
+
+  step = $mesg_prev.gsub(".", "").split(' ')[0]
 
   system("./proc-stats \"#{$top_patt}\" > #{$out_file}-#{step}.proc-stats &")
+end
 
-  run cmd
-
+def proc_stats_end()
   # Similar to killall...
   #
   x = `grep -l proc-stats /proc/*/cmdline`

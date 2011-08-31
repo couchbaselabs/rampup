@@ -143,6 +143,8 @@ step("warming...")
 w = 0
 
 if File.exists?("/opt/#{$pkg_base}/bin/mbstats")
+  proc_stats_start()
+
   i = 0
   while i < 100000
     sleep 2
@@ -152,16 +154,20 @@ if File.exists?("/opt/#{$pkg_base}/bin/mbstats")
     i = i + 1
   end
 
+  proc_stats_end()
+
   w = `/opt/#{$pkg_base}/bin/mbstats 127.0.0.1:11210 all | grep "ep_warmup_time:"`
   w = (w.split(' ')[-1] || "0").to_i / 1000 # ep_warmup_time is in milliseconds.
 end
 
 # ------------------------------------
 
-step("index-rebuilding...",
-     'curl -H "Content-Type: application/json"' +
-     ' -X POST http://localhost:5984/default/_compact/rampup',
-     w)
+step("index-rebuilding...", nil, w)
+
+run('curl -H "Content-Type: application/json"' +
+    ' -X POST http://localhost:5984/default/_compact/rampup')
+
+proc_stats_start()
 
 i = 0
 while i < 100000
@@ -170,6 +176,8 @@ while i < 100000
   sleep 1
   i = i + 1
 end
+
+proc_stats_end()
 
 # ------------------------------------
 
