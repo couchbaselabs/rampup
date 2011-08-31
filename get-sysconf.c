@@ -6,6 +6,6 @@ int main(int argc, char **argv) {
   if (argc > 1) {
     n = atoi(argv[1]);
   }
-  printf("%zd", n);
+  printf("%zd", sysconf(n));
   return 0;
 }
