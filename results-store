@@ -15,7 +15,7 @@ import couchdb
 
 def process_file(db, upload, test, filename, run, build, ram_quota, replica_count, num_items, num_nodes, num_vbuckets, val_size):
 
-    steps = []
+    labels = []
     details = []
 
     for line in open(filename):
@@ -27,7 +27,7 @@ def process_file(db, upload, test, filename, run, build, ram_quota, replica_coun
             label   = parts[2].rstrip('.')
             elapsed = float(parts[-1])
 
-            steps.append(step)
+            labels.append(label)
             details.append({ 'step': step, 'label': label, 'elapsed': elapsed })
 
     doc = { 'upload': upload, 'test': test,
@@ -40,8 +40,8 @@ def process_file(db, upload, test, filename, run, build, ram_quota, replica_coun
 
     id, rev = db.save(doc)
 
-    for step in steps:
-        x = filename + "-" + step + ".proc-stats"
+    for label in labels:
+        x = filename + "-" + label + ".proc-stats"
         z = x + ".bz2"
 
         if not os.path.exists(z):
