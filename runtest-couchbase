@@ -65,7 +65,7 @@ if $join_url
     --server-add=#{my_ip}"
   sleep(3)
   run "/opt/#{$pkg_base}/bin/membase rebalance -c #{$join_url} \
-    -u Administrator -p password
+    -u Administrator -p password"
 else
   run "/opt/#{$pkg_base}/bin/membase cluster-init -c 127.0.0.1 \
     --cluster-init-username=Administrator \
