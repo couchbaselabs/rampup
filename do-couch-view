@@ -12,21 +12,23 @@ v = ARGV[2] || "last"
 
 extra = "gte"
 if ARGV[3] == "eq"
-  extra = "&endkey=#{k}"
+  extra = "&endkey=\"#{k}\""
 end
 
+a = Time.now
+
 for x in 0..n
-  a = Time.now
-  uri = URI.parse("http://#{host}:5984/default/_design/rampup-#{v}/_view/#{v}?startkey=#{k}&limit=10#{extra}&stale=ok")
+  uri = URI.parse("http://#{host}:5984/default/_design/rampup-#{v}/_view/#{v}?startkey=\"#{k}\"&limit=10#{extra}&stale=ok")
   Net::HTTP.new(uri.host, uri.port).start {|http|
     http.request_get(uri.request_uri)
     http.finish
   }
-  b = Time.now
-  s = s + (b - a)
   k = k + 1
   k = 0 if k >= 100
 end
+
+b = Time.now
+s = b - a
 
 print "requests #{n}\n"
 print "time #{s}\n"

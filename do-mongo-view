@@ -19,6 +19,8 @@ conn = Mongo::Connection.new($host, 27017, :safe => $safe)
 db   = conn.db($dbName)
 coll = db.collection($collName)
 
+a = Time.now
+
 for x in 0..n
   query = {}
   query[v] = { "$gte" => k.to_s }
@@ -27,20 +29,18 @@ for x in 0..n
     query[v] = { "$eq" => k.to_s }
   end
 
-  a = Time.now
-
   # Not running through the result seems, interestingly, faster.
   #
   # coll.find(query).limit(10)
   #
   coll.find(query).limit(10).each {|doc| doc }
 
-  b = Time.now
-
-  s = s + (b - a)
   k = k + 1
   k = 0 if k >= 100
 end
+
+b = Time.now
+s = b - a
 
 print "requests #{n}\n"
 print "time #{s}\n"
