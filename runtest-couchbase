@@ -100,14 +100,18 @@ step("loading-docs...",
 
 step("loading-persisted...")
 
-i = 0
-while i < 100000
-  w = `/opt/#{$pkg_base}/bin/mbstats 127.0.0.1:11210 all | egrep "ep_queue_size|ep_flusher_todo"`
-  w = w.strip.split(/[\s\n\t]+/).select {|x| !x.include?(':') and x != '0' }
-  break if w.empty?
-  i = i + 1
-  sleep 0.1
+def wait_until_queue_drained()
+  i = 0
+  while i < 100000
+    w = `/opt/#{$pkg_base}/bin/mbstats 127.0.0.1:11210 all | egrep "ep_queue_size|ep_flusher_todo"`
+    w = w.strip.split(/[\s\n\t]+/).select {|x| !x.include?(':') and x != '0' }
+    break if w.empty?
+    i = i + 1
+    sleep 0.1
+  end
 end
+
+wait_until_queue_drained()
 
 # ------------------------------------
 
@@ -194,6 +198,8 @@ if File.exists?("/opt/#{$pkg_base}/bin/membase")
           -u Administrator -p password \
           --bucket=default")
 
+  sleep(2)
+
   # ------------------------------------
 
   step("bucket-create...",
@@ -202,38 +208,29 @@ if File.exists?("/opt/#{$pkg_base}/bin/membase")
           --bucket=default --bucket-type=membase --bucket-password= \
           --bucket-ramsize=#{$ram_quota} --bucket-replica=#{$replica_count}")
 
-  # ------------------------------------
-
-  step("clogging...",
-       "/opt/#{$pkg_base}/bin/mbflushctl 127.0.0.1:11210 stop")
+  sleep(2)
 
   # ------------------------------------
 
-  step("loading-clog...",
-       "./rampup-client #{$cli_kind[0]} 127.0.0.1:#{$cli_kind[1]}" \
-       " ratio_sets=1.0 ratio_creates=1.0" \
-       " min_value_size=#{$val_size}" \
-       " max_creates=100000 exit_after_creates=1" \
-       " bulk_load_batch=100",
-       nil, 100000)
+  clog_num_items = 100000
+
+  step("clogging...", nil, nil, clog_num_items)
+
+  run("/opt/#{$pkg_base}/bin/mbflushctl 127.0.0.1:11210 stop")
+
+  run("./rampup-client #{$cli_kind[0]} 127.0.0.1:#{$cli_kind[1]}" \
+      " ratio_sets=1.0 ratio_creates=1.0" \
+      " min_value_size=#{$val_size}" \
+      " max_creates=#{clog_num_items} exit_after_creates=1" \
+      " bulk_load_batch=100")
 
   # ------------------------------------
 
-  step("unclogging...",
-       "/opt/#{$pkg_base}/bin/mbflushctl 127.0.0.1:11210 start")
+  step("unclogging...", nil, nil, clog_num_items)
 
-  # ------------------------------------
+  run("/opt/#{$pkg_base}/bin/mbflushctl 127.0.0.1:11210 start")
 
-  step("clog-persisted...")
-
-  i = 0
-  while i < 100000
-    w = `/opt/#{$pkg_base}/bin/mbstats 127.0.0.1:11210 all | egrep "ep_queue_size|ep_flusher_todo"`
-    w = w.strip.split(/[\s\n\t]+/).select {|x| !x.include?(':') and x != '0' }
-    break if w.empty?
-    i = i + 1
-    sleep 0.1
-  end
+  wait_until_queue_drained()
 end
 
 # ------------------------------------
