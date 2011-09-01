@@ -111,7 +111,11 @@ def wait_until_queue_drained()
   end
 end
 
+proc_stats_start()
+
 wait_until_queue_drained()
+
+proc_stats_end()
 
 # ------------------------------------
 
@@ -216,6 +220,8 @@ if File.exists?("/opt/#{$pkg_base}/bin/membase")
 
   step("clogging...", nil, nil, clog_num_items)
 
+  proc_stats_start()
+
   run("/opt/#{$pkg_base}/bin/mbflushctl 127.0.0.1:11210 stop")
 
   run("./rampup-client #{$cli_kind[0]} 127.0.0.1:#{$cli_kind[1]}" \
@@ -224,13 +230,20 @@ if File.exists?("/opt/#{$pkg_base}/bin/membase")
       " max_creates=#{clog_num_items} exit_after_creates=1" \
       " bulk_load_batch=100")
 
+  proc_stats_end()
+
   # ------------------------------------
 
   step("unclogging...", nil, nil, clog_num_items)
 
   run("/opt/#{$pkg_base}/bin/mbflushctl 127.0.0.1:11210 start")
 
+  proc_stats_start()
+
   wait_until_queue_drained()
+
+  proc_stats_end()
+
 end
 
 # ------------------------------------
