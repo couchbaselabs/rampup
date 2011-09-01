@@ -29,7 +29,7 @@ membase cluster-init -c 127.0.0.1 --cluster-init-username=Administrator --cluste
 membase bucket-create -c 127.0.0.1 -u Administrator -p password --bucket=default --bucket-type=membase --bucket-ramsize=3000 --bucket-replica=0 --bucket-password=
 sleep 4
 
-curl -vX PUT http://127.0.0.1:5984/default/_design/rampup -d @rampup.json
+curl -vX PUT http://127.0.0.1:5984/default/_design/rampup-last -d @rampup-last.json
 echo # loading membase...
 echo %date%-%time%
 pslist | grep erl
@@ -53,7 +53,7 @@ echo # view building...
 echo %date%-%time%
 pslist | grep erl
 
-curl http://127.0.0.1:5984/default/_design/rampup/_view/last?limit=10
+curl http://127.0.0.1:5984/default/_design/rampup-last/_view/last?limit=10
 
 echo # view accessing...
 echo %date%-%time%

@@ -96,7 +96,7 @@ $suffix = "\"body\":\"#{$body}\"}"
 def gen_doc_hash(key_num, key_str, min_value_size)
   return { "_id"     => key_str,
            "key_num" => key_num,
-           "mid"     => key_str[-4..-2],
+           "mid"     => key_str[-8..-2],
            "last"    => key_str[-1..-1],
            "body"    => $body
          }
@@ -105,7 +105,7 @@ end
 def gen_doc_string(key_num, key_str, min_value_size, key_name = "key")
   return "{\"#{key_name}\":\"#{key_str}\"," \
           "\"key_num\":#{key_num}," \
-          "\"mid\":\"#{key_str[-4..-2]}\"," \
+          "\"mid\":\"#{key_str[-8..-2]}\"," \
           "\"last\":\"#{key_str[-1..-1]}\"," +
          $suffix
 end

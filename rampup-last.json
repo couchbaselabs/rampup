@@ -1,5 +1,5 @@
 {
-  "_id" : "_design/rampup",
+  "_id" : "_design/rampup-last",
   "views" : {
     "last" : {
       "map" : "function(doc){ emit(doc.last, null)}"

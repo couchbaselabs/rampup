@@ -2,6 +2,8 @@
 *.rpm
 *.tgz
 *~
+#*#
+.#*#
 .DS_Store
 erl_crash.dump
 mongodb-*

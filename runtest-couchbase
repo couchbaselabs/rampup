@@ -84,7 +84,7 @@ if $cli_kind[0] == 'couchdb'
   sleep 1
 end
 
-run "curl -vX PUT http://127.0.0.1:5984/default/_design/rampup -d @rampup.json"
+run "curl -vX PUT http://127.0.0.1:5984/default/_design/rampup-last -d @rampup-last.json"
 
 # ------------------------------------
 
@@ -130,12 +130,50 @@ step("reading-docs...",
 # ------------------------------------
 
 step("index-building...",
-     "curl -v http://127.0.0.1:5984/default/_design/rampup/_view/last?limit=10")
+     "curl -v http://127.0.0.1:5984/default/_design/rampup-last/_view/last?limit=10")
 
 # ------------------------------------
 
 step("index-accessing...",
-     "./do-couch-view 127.0.0.1 10000 >> #{$out_file}",
+     "./do-couch-view 127.0.0.1 10000 last gte >> #{$out_file}",
+     nil, 10000)
+
+step("index-accessing2...",
+     "./do-couch-view 127.0.0.1 10000 last gte >> #{$out_file}",
+     nil, 10000)
+
+step("index-eq-accessing...",
+     "./do-couch-view 127.0.0.1 10000 last eq >> #{$out_file}",
+     nil, 10000)
+
+step("index-eq-accessing2...",
+     "./do-couch-view 127.0.0.1 10000 last eq >> #{$out_file}",
+     nil, 10000)
+
+# ------------------------------------
+
+step("index-mid-design...",
+     "curl -vX PUT http://127.0.0.1:5984/default/_design/rampup-mid -d @rampup-mid.json")
+
+step("index-mid-building...",
+     "curl -v http://127.0.0.1:5984/default/_design/rampup-mid/_view/mid?limit=10")
+
+# ------------------------------------
+
+step("index-mid-accessing...",
+     "./do-couch-view 127.0.0.1 10000 mid gte >> #{$out_file}",
+     nil, 10000)
+
+step("index-mid-accessing2...",
+     "./do-couch-view 127.0.0.1 10000 mid gte >> #{$out_file}",
+     nil, 10000)
+
+step("index-mid-eq-accessing...",
+     "./do-couch-view 127.0.0.1 10000 mid eq >> #{$out_file}",
+     nil, 10000)
+
+step("index-mid-eq-accessing2...",
+     "./do-couch-view 127.0.0.1 10000 mid eq >> #{$out_file}",
      nil, 10000)
 
 # ------------------------------------

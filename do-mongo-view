@@ -13,6 +13,8 @@ s = k = 0
 
 v = ARGV[2] || "last"
 
+query_eq = ARGV[3] == "eq"
+
 conn = Mongo::Connection.new($host, 27017, :safe => $safe)
 db   = conn.db($dbName)
 coll = db.collection($collName)
@@ -20,6 +22,10 @@ coll = db.collection($collName)
 for x in 0..n
   query = {}
   query[v] = { "$gte" => k.to_s }
+
+  if query_eq
+    query[v] = { "$eq" => k.to_s }
+  end
 
   a = Time.now
 

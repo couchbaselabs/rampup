@@ -170,7 +170,42 @@ step("fsyncing...",
 # ------------------------------------
 
 step("index-accessing...",
-     "./do-mongo-view 127.0.0.1 10000 >> #{$out_file}",
+     "./do-mongo-view 127.0.0.1 10000 last >> #{$out_file}",
+     nil, 10000)
+
+step("index-accessing2...",
+     "./do-mongo-view 127.0.0.1 10000 last >> #{$out_file}",
+     nil, 10000)
+
+step("index-eq-accessing...",
+     "./do-mongo-view 127.0.0.1 10000 last equal >> #{$out_file}",
+     nil, 10000)
+
+step("index-eq-accessing2...",
+     "./do-mongo-view 127.0.0.1 10000 last equal >> #{$out_file}",
+     nil, 10000)
+
+# ------------------------------------
+
+step("index-mid-building...",
+     "#{$mongo_base}/bin/mongo 127.0.0.1:27017/test ensureIndex-mid.js")
+
+# ------------------------------------
+
+step("index-mid-accessing...",
+     "./do-mongo-view 127.0.0.1 10000 mid >> #{$out_file}",
+     nil, 10000)
+
+step("index-mid-accessing2...",
+     "./do-mongo-view 127.0.0.1 10000 mid >> #{$out_file}",
+     nil, 10000)
+
+step("index-mid-eq-accessing...",
+     "./do-mongo-view 127.0.0.1 10000 mid equal >> #{$out_file}",
+     nil, 10000)
+
+step("index-mid-eq-accessing2...",
+     "./do-mongo-view 127.0.0.1 10000 mid equal >> #{$out_file}",
      nil, 10000)
 
 # ------------------------------------
