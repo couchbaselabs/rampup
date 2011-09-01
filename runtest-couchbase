@@ -215,13 +215,13 @@ end
 step("index-rebuilding...", nil, w)
 
 run('curl -H "Content-Type: application/json"' +
-    ' -X POST http://localhost:5984/default/_compact/rampup')
+    ' -X POST http://localhost:5984/default/_compact/rampup-last')
 
 proc_stats_start()
 
 i = 0
 while i < 100000
-  h = `curl -X GET http://127.0.0.1:5984/default/_design/rampup/_info`
+  h = `curl -X GET http://127.0.0.1:5984/default/_design/rampup-last/_info`
   break if h.include?('"compact_running":false')
   sleep 1
   i = i + 1
