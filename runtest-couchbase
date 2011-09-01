@@ -178,6 +178,14 @@ step("index-mid-eq-accessing2...",
 
 # ------------------------------------
 
+step("index-mid-erlang-design...",
+     "curl -vX PUT http://127.0.0.1:5984/default/_design/rampup-mid-erlang -d @rampup-mid-erlang.json")
+
+step("index-mid-erlang-building...",
+     "curl -v http://127.0.0.1:5984/default/_design/rampup-mid-erlang/_view/mid-erlang?limit=10")
+
+# ------------------------------------
+
 step("stopping...",
      "sudo /etc/init.d/#{$pkg_base}-server stop")
 
