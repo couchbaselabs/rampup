@@ -1,0 +1,10 @@
+{
+  "_id" : "_design/rampup-last-erlang",
+  "language" : "erlang",
+  "views" : {
+    "last" : {
+      "map" : "fun({Doc}) -> Emit(proplists:get_value(<<\"last\">>, Doc, null), null) end."
+    }
+  }
+}
+

@@ -1,0 +1,10 @@
+{
+  "_id" : "_design/rampup-mid-erlang",
+  "language" : "erlang",
+  "views" : {
+    "mid" : {
+      "map" : "fun({Doc}) -> Emit(proplists:get_value(<<\"mid\">>, Doc, null), null) end."
+    }
+  }
+}
+
