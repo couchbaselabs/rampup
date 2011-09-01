@@ -185,6 +185,59 @@ proc_stats_end()
 
 # ------------------------------------
 
+if File.exists?("/opt/#{$pkg_base}/bin/membase")
+
+  # ------------------------------------
+
+  step("bucket-delete...",
+       "/opt/#{$pkg_base}/bin/membase bucket-delete -c 127.0.0.1 \
+          -u Administrator -p password \
+          --bucket=default")
+
+  # ------------------------------------
+
+  step("bucket-create...",
+       "/opt/#{$pkg_base}/bin/membase bucket-create -c 127.0.0.1 \
+          -u Administrator -p password \
+          --bucket=default --bucket-type=membase --bucket-password= \
+          --bucket-ramsize=#{$ram_quota} --bucket-replica=#{$replica_count}")
+
+  # ------------------------------------
+
+  step("clogging...",
+       "/opt/#{$pkg_base}/bin/mbflushctl 127.0.0.1:11210 stop")
+
+  # ------------------------------------
+
+  step("loading-clog...",
+       "./rampup-client #{$cli_kind[0]} 127.0.0.1:#{$cli_kind[1]}" \
+       " ratio_sets=1.0 ratio_creates=1.0" \
+       " min_value_size=#{$val_size}" \
+       " max_creates=100000 exit_after_creates=1" \
+       " bulk_load_batch=100",
+       nil, 100000)
+
+  # ------------------------------------
+
+  step("unclogging...",
+       "/opt/#{$pkg_base}/bin/mbflushctl 127.0.0.1:11210 start")
+
+  # ------------------------------------
+
+  step("clog-persisted...")
+
+  i = 0
+  while i < 100000
+    w = `/opt/#{$pkg_base}/bin/mbstats 127.0.0.1:11210 all | egrep "ep_queue_size|ep_flusher_todo"`
+    w = w.strip.split(/[\s\n\t]+/).select {|x| !x.include?(':') and x != '0' }
+    break if w.empty?
+    i = i + 1
+    sleep 0.1
+  end
+end
+
+# ------------------------------------
+
 step("done...",
      "sudo /etc/init.d/#{$pkg_base}-server stop")
 
