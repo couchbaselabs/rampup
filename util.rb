@@ -61,7 +61,7 @@ def proc_stats_start()
 
   system("./proc-stats \"#{$top_patt}\" > #{$out_file}-#{step}.proc-stats &")
 
-  dev = `mount | grep "on / " | cut -f 1 -d ' ' | cut -c 6-` # Example: "sdb1"
+  dev = `mount | grep "on / "`.split(' ')[0].split('/')[2] # Example: "sdb1"
 
   system("./proc-stats #{dev} /proc/diskstats > #{$out_file}-#{step}.proc-diskstats &")
 end
