@@ -60,6 +60,10 @@ def proc_stats_start()
   step = $mesg_prev.gsub(".", "").split(' ')[0]
 
   system("./proc-stats \"#{$top_patt}\" > #{$out_file}-#{step}.proc-stats &")
+
+  dev = `mount | grep "on / " | cut -f 1 -d ' ' | cut -c 6-` # Example: "sdb1"
+
+  system("./proc-stats #{dev} /proc/diskstats > #{$out_file}-#{step}.proc-diskstats &")
 end
 
 def proc_stats_end()

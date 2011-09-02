@@ -1,9 +1,10 @@
 #!/usr/bin/env ruby
 
 pattern = ARGV[0] || "memcached|beam.smp|couchjs|moxi"
+target  = ARGV[1] || "/proc/*/stat"
 
 while true
   sleep 1
-  print `egrep "#{pattern}" /proc/*/stat`
+  print `egrep "#{pattern}" #{target}`
 end
 
