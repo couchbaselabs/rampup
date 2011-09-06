@@ -112,6 +112,7 @@ step("loading-docs...",
      " ratio_sets=1.0 ratio_creates=1.0" \
      " min_value_size=#{$val_size}" \
      " max_creates=#{$num_items} exit_after_creates=1" \
+     " num_vbuckets=#{$num_vbuckets}" \
      " bulk_load_batch=#{bulk_load_batch}",
      nil, $num_items)
 
@@ -143,6 +144,7 @@ step("reading-docs...",
      " ratio_sets=0.0" \
      " min_value_size=#{$val_size}" \
      " num_items=#{$num_items}" \
+     " num_vbuckets=#{$num_vbuckets}" \
      " max_ops=10000",
      nil, 10000)
 
