@@ -22,7 +22,7 @@ $cli_kind      = ['couchdb', 5984] if $pkg.include?('couchbase-single')
 $ram_quota     = ARGV[2]
 $replica_count = ARGV[3]
 $num_items     = ARGV[4]
-$num_vbuckets  = ARGV[5]
+$num_vbuckets  = ARGV[5].to_i
 $val_size      = ARGV[6] || "1000"
 $join_url      = ARGV[7]
 $extra_sleep   = ARGV[8]
@@ -82,12 +82,25 @@ end
 sleep 15
 sleep $extra_sleep.to_i if $extra_sleep
 
-if $cli_kind[0] == 'couchdb'
-  run "curl -vX PUT http://127.0.0.1:5984/default"
+if $cli_kind[0] == 'couchdb' and $num_vbuckets > 1
+  (0..($num_vbuckets - 1)).each do |partition|
+    run "curl -vX PUT http://127.0.0.1:5984/default%2F#{partition}"
+  end
+end
+
+def load_design_doc(kind)
+  if $cli_kind[0] == 'couchdb' and $num_vbuckets > 1
+    run "curl -vX PUT http://127.0.0.1:5984/default%2Fmaster"
+    run "curl -vX PUT http://127.0.0.1:5984/default%2Fmaster/_design/rampup-#{kind} -d @rampup-#{kind}.json"
+  else
+    run "curl -vX PUT http://127.0.0.1:5984/default"
+    run "curl -vX PUT http://127.0.0.1:5984/default/_design/rampup-#{kind} -d @rampup-#{kind}.json"
+  end
+
   sleep 1
 end
 
-run "curl -vX PUT http://127.0.0.1:5984/default/_design/rampup-last -d @rampup-last.json"
+load_design_doc('last')
 
 # ------------------------------------
 
@@ -133,60 +146,90 @@ step("reading-docs...",
 # ------------------------------------
 
 if index
+  index_build_cmd = "curl -v http://127.0.0.1:5984/default/_design/rampup-last/_view/last?limit=10"
+  index_access_extra = ""
+
+  if $cli_kind[0] == 'couchdb' and $num_vbuckets > 1
+    index_build_cmd = "curl -v http://127.0.0.1:5984/default/_design/rampup-last/_set_view/last?limit=10&partitions=#{$num_vbuckets}"
+    index_access_extra = "_set_view"
+  end
+
   step("index-building...",
-       "curl -v http://127.0.0.1:5984/default/_design/rampup-last/_view/last?limit=10")
+       index_build_cmd)
 
   # ------------------------------------
 
   step("index-accessing...",
-       "./do-couch-view 127.0.0.1 10000 last gte >> #{$out_file}",
+       "./do-couch-view 127.0.0.1 10000 last gte #{index_access_extra} >> #{$out_file}",
        nil, 10000)
 
   step("index-accessing2...",
-       "./do-couch-view 127.0.0.1 10000 last gte >> #{$out_file}",
+       "./do-couch-view 127.0.0.1 10000 last gte #{index_access_extra} >> #{$out_file}",
        nil, 10000)
 
   step("index-eq-accessing...",
-       "./do-couch-view 127.0.0.1 10000 last eq >> #{$out_file}",
+       "./do-couch-view 127.0.0.1 10000 last eq #{index_access_extra} >> #{$out_file}",
        nil, 10000)
 
   step("index-eq-accessing2...",
-       "./do-couch-view 127.0.0.1 10000 last eq >> #{$out_file}",
+       "./do-couch-view 127.0.0.1 10000 last eq #{index_access_extra} >> #{$out_file}",
        nil, 10000)
 
   # ------------------------------------
 
-  step("index-mid-design...",
-       "curl -vX PUT http://127.0.0.1:5984/default/_design/rampup-mid -d @rampup-mid.json")
+  step("index-mid-design...")
+
+  load_design_doc('mid')
+
+  # ------------------------------------
+
+  index_build_cmd = "curl -v http://127.0.0.1:5984/default/_design/rampup-mid/_view/mid?limit=10"
+  index_access_extra = ""
+
+  if $cli_kind[0] == 'couchdb' and $num_vbuckets > 1
+    index_build_cmd = "curl -v http://127.0.0.1:5984/default/_design/rampup-mid/_set_view/mid?limit=10&partitions=#{$num_vbuckets}"
+    index_access_extra = "_set_view"
+  end
 
   step("index-mid-building...",
-       "curl -v http://127.0.0.1:5984/default/_design/rampup-mid/_view/mid?limit=10")
+       index_build_cmd)
 
   # ------------------------------------
 
   step("index-mid-accessing...",
-       "./do-couch-view 127.0.0.1 10000 mid gte >> #{$out_file}",
+       "./do-couch-view 127.0.0.1 10000 mid gte #{index_access_extra} >> #{$out_file}",
        nil, 10000)
 
   step("index-mid-accessing2...",
-       "./do-couch-view 127.0.0.1 10000 mid gte >> #{$out_file}",
+       "./do-couch-view 127.0.0.1 10000 mid gte #{index_access_extra} >> #{$out_file}",
        nil, 10000)
 
   step("index-mid-eq-accessing...",
-       "./do-couch-view 127.0.0.1 10000 mid eq >> #{$out_file}",
+       "./do-couch-view 127.0.0.1 10000 mid eq #{index_access_extra} >> #{$out_file}",
        nil, 10000)
 
   step("index-mid-eq-accessing2...",
-       "./do-couch-view 127.0.0.1 10000 mid eq >> #{$out_file}",
+       "./do-couch-view 127.0.0.1 10000 mid eq #{index_access_extra} >> #{$out_file}",
        nil, 10000)
 
   # ------------------------------------
 
-  step("index-mid-erlang-design...",
-       "curl -vX PUT http://127.0.0.1:5984/default/_design/rampup-mid-erlang -d @rampup-mid-erlang.json")
+  step("index-mid-erlang-design...")
+
+  load_design_doc('mid-erlang')
+
+  # ------------------------------------
+
+  index_build_cmd = "curl -v http://127.0.0.1:5984/default/_design/rampup-mid-erlang/_view/mid-erlang?limit=10"
+  index_access_extra = ""
+
+  if $cli_kind[0] == 'couchdb' and $num_vbuckets > 1
+    index_build_cmd = "curl -v http://127.0.0.1:5984/default/_design/rampup-mid-erlang/_set_view/mid-erlang?limit=10&partitions=#{$num_vbuckets}"
+    index_access_extra = "_set_view"
+  end
 
   step("index-mid-erlang-building...",
-       "curl -v http://127.0.0.1:5984/default/_design/rampup-mid-erlang/_view/mid-erlang?limit=10")
+       index_build_cmd)
 end
 
 # ------------------------------------
