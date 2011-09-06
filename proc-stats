@@ -6,5 +6,6 @@ target  = ARGV[1] || "/proc/*/stat"
 while true
   sleep 1
   print `egrep "#{pattern}" #{target}`
+  $stdout.flush
 end
 
