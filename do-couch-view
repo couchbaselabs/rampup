@@ -15,10 +15,17 @@ if ARGV[3] == "eq"
   extra = "&endkey=%22#{k}%22"
 end
 
+cmd_params = ARGV[4] || "_view"
+cmd        = cmd_params.split(',')[0]
+params     = ""
+if cmd_params.split(',')[1]
+  params "&" + cmd_params.split(',')[1]
+end
+
 a = Time.now
 
 for x in 0..n
-  uri = URI.parse("http://#{host}:5984/default/_design/rampup-#{v}/_view/#{v}?startkey=%22#{k}%22&limit=10#{extra}&stale=ok")
+  uri = URI.parse("http://#{host}:5984/default/_design/rampup-#{v}/#{cmd}/#{v}?startkey=%22#{k}%22&limit=10#{extra}&stale=ok#{params}")
   Net::HTTP.new(uri.host, uri.port).start {|http|
     http.request_get(uri.request_uri)
     http.finish
