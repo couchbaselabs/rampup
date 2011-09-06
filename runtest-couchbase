@@ -27,6 +27,9 @@ $val_size      = ARGV[6] || "1000"
 $join_url      = ARGV[7]
 $extra_sleep   = ARGV[8]
 
+index = true
+index = false if $pkg_base == 'membase'
+
 # ------------------------------------
 
 step("preparing... #{$test_name}")
@@ -129,60 +132,62 @@ step("reading-docs...",
 
 # ------------------------------------
 
-step("index-building...",
-     "curl -v http://127.0.0.1:5984/default/_design/rampup-last/_view/last?limit=10")
+if index
+  step("index-building...",
+       "curl -v http://127.0.0.1:5984/default/_design/rampup-last/_view/last?limit=10")
 
-# ------------------------------------
+  # ------------------------------------
 
-step("index-accessing...",
-     "./do-couch-view 127.0.0.1 10000 last gte >> #{$out_file}",
-     nil, 10000)
+  step("index-accessing...",
+       "./do-couch-view 127.0.0.1 10000 last gte >> #{$out_file}",
+       nil, 10000)
 
-step("index-accessing2...",
-     "./do-couch-view 127.0.0.1 10000 last gte >> #{$out_file}",
-     nil, 10000)
+  step("index-accessing2...",
+       "./do-couch-view 127.0.0.1 10000 last gte >> #{$out_file}",
+       nil, 10000)
 
-step("index-eq-accessing...",
-     "./do-couch-view 127.0.0.1 10000 last eq >> #{$out_file}",
-     nil, 10000)
+  step("index-eq-accessing...",
+       "./do-couch-view 127.0.0.1 10000 last eq >> #{$out_file}",
+       nil, 10000)
 
-step("index-eq-accessing2...",
-     "./do-couch-view 127.0.0.1 10000 last eq >> #{$out_file}",
-     nil, 10000)
+  step("index-eq-accessing2...",
+       "./do-couch-view 127.0.0.1 10000 last eq >> #{$out_file}",
+       nil, 10000)
 
-# ------------------------------------
+  # ------------------------------------
 
-step("index-mid-design...",
-     "curl -vX PUT http://127.0.0.1:5984/default/_design/rampup-mid -d @rampup-mid.json")
+  step("index-mid-design...",
+       "curl -vX PUT http://127.0.0.1:5984/default/_design/rampup-mid -d @rampup-mid.json")
 
-step("index-mid-building...",
-     "curl -v http://127.0.0.1:5984/default/_design/rampup-mid/_view/mid?limit=10")
+  step("index-mid-building...",
+       "curl -v http://127.0.0.1:5984/default/_design/rampup-mid/_view/mid?limit=10")
 
-# ------------------------------------
+  # ------------------------------------
 
-step("index-mid-accessing...",
-     "./do-couch-view 127.0.0.1 10000 mid gte >> #{$out_file}",
-     nil, 10000)
+  step("index-mid-accessing...",
+       "./do-couch-view 127.0.0.1 10000 mid gte >> #{$out_file}",
+       nil, 10000)
 
-step("index-mid-accessing2...",
-     "./do-couch-view 127.0.0.1 10000 mid gte >> #{$out_file}",
-     nil, 10000)
+  step("index-mid-accessing2...",
+       "./do-couch-view 127.0.0.1 10000 mid gte >> #{$out_file}",
+       nil, 10000)
 
-step("index-mid-eq-accessing...",
-     "./do-couch-view 127.0.0.1 10000 mid eq >> #{$out_file}",
-     nil, 10000)
+  step("index-mid-eq-accessing...",
+       "./do-couch-view 127.0.0.1 10000 mid eq >> #{$out_file}",
+       nil, 10000)
 
-step("index-mid-eq-accessing2...",
-     "./do-couch-view 127.0.0.1 10000 mid eq >> #{$out_file}",
-     nil, 10000)
+  step("index-mid-eq-accessing2...",
+       "./do-couch-view 127.0.0.1 10000 mid eq >> #{$out_file}",
+       nil, 10000)
 
-# ------------------------------------
+  # ------------------------------------
 
-step("index-mid-erlang-design...",
-     "curl -vX PUT http://127.0.0.1:5984/default/_design/rampup-mid-erlang -d @rampup-mid-erlang.json")
+  step("index-mid-erlang-design...",
+       "curl -vX PUT http://127.0.0.1:5984/default/_design/rampup-mid-erlang -d @rampup-mid-erlang.json")
 
-step("index-mid-erlang-building...",
-     "curl -v http://127.0.0.1:5984/default/_design/rampup-mid-erlang/_view/mid-erlang?limit=10")
+  step("index-mid-erlang-building...",
+       "curl -v http://127.0.0.1:5984/default/_design/rampup-mid-erlang/_view/mid-erlang?limit=10")
+end
 
 # ------------------------------------
 
@@ -220,22 +225,24 @@ end
 
 # ------------------------------------
 
-step("index-rebuilding...", nil, w)
+if index
+  step("index-rebuilding...", nil, w)
 
-run('curl -H "Content-Type: application/json"' +
-    ' -X POST http://localhost:5984/default/_compact/rampup-last')
+  run('curl -H "Content-Type: application/json"' +
+      ' -X POST http://localhost:5984/default/_compact/rampup-last')
 
-proc_stats_start()
+  proc_stats_start()
 
-i = 0
-while i < 100000
-  h = `curl -X GET http://127.0.0.1:5984/default/_design/rampup-last/_info`
-  break if h.include?('"compact_running":false')
-  sleep 1
-  i = i + 1
+  i = 0
+  while i < 100000
+    h = `curl -X GET http://127.0.0.1:5984/default/_design/rampup-last/_info`
+    break if h.include?('"compact_running":false')
+    sleep 1
+    i = i + 1
+  end
+
+  proc_stats_end()
 end
-
-proc_stats_end()
 
 # ------------------------------------
 

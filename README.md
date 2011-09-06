@@ -47,11 +47,21 @@ Required gem's...
 
     gem install memcache dalli
 
-On Amazon Default Linux EC2 nodes, you'll need to get the right openssl...
+### On Amazon Default Linux
 
     sudo yum install openssl098e
 
-On ubuntu...
+### On centos...
+
+Get git.  Along the way, you might need...
+
+    yum install gcc gcc-c++ zlib zlib-devel
+
+Get a recent ruby (1.8.7 or greater).
+
+Get rubygems (from rubygems.org).
+
+### On ubuntu...
 
     apt-get install git-core
     apt-get install ruby irb
