@@ -5,7 +5,12 @@ def run(cmd, use_system=false)
   if use_system
     system(cmd)
   else
-    `#{cmd}`
+    prog = cmd.split(' ')[0]
+    if (not prog.include?('/')) or File.exists?(prog)
+      `#{cmd}`
+    else
+      print("SKIPPING: unknown command: #{cmd}\n")
+    end
   end
 end
 
