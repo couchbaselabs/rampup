@@ -18,7 +18,8 @@ $cfg_defaults = {
   :ratio_hot_gets => 0.95, # Fraction of GET's that hit the hot item subset.
   :bulk_load_batch => 1,   # When > 1, use batched bulk load optimization,
                            # if appropriate, flushing after this many inserts.
-  :exit_after_creates => 0 # Exit after max_creates is reached.
+  :exit_after_creates => 0, # Exit after max_creates is reached.
+  :num_vbuckets => 0
 }
 
 $cur_defaults = {
@@ -113,7 +114,7 @@ end
 # ----------------------------------------------------------------
 
 class Store
-  def connect(target)
+  def connect(target, cfg)
   end
 
   def command(cmd, key_num, key_str, data, bulk_load_batch = 1)
@@ -127,23 +128,29 @@ class Store
     gen_doc_string(key_num, key_str, min_value_size)
   end
 
-  def cmd_line_get(key_str)
+  def cmd_line_get(key_num, key_str)
     return key_str
   end
 end
 
 class StoreCouchDB < Store
-  def connect(target) # host:port
+  def connect(target, cfg) # host:port
     @target = target
     @http = Net::HTTP.new(target.split(':')[0],
                           target.split(':')[1].to_i)
     @bulk = []
+    @num_vbuckets = cfg.num_vbuckets
   end
 
   def command(cmd, key_num, key_str, data, bulk_load_batch = 1)
+    partition = ""
+    if @num_vbuckets > 1
+      partition = "%2F#{key_num.modulo(@num_vbuckets)}"
+    end
+
     case cmd
     when :get
-      uri = URI.parse("http://#{@target}/default/#{key_str}")
+      uri = URI.parse("http://#{@target}/default#{partition}/#{key_str}")
       request = Net::HTTP::Get.new(uri.request_uri)
       return @http.request(request)
     when :set
@@ -153,7 +160,7 @@ class StoreCouchDB < Store
           flush
         end
       else
-        uri = URI.parse("http://#{@target}/default/#{key_str}")
+        uri = URI.parse("http://#{@target}/default#{partition}/#{key_str}")
         request = Net::HTTP::Put.new(uri.request_uri)
         request.body = data
         return @http.request(request)
@@ -179,15 +186,20 @@ class StoreCouchDB < Store
     gen_doc_string(key_num, key_str, min_value_size, key_name = "_id")
   end
 
-  def cmd_line_get(key_str)
-    return "curl http://#{@target}/default/#{key_str}"
+  def cmd_line_get(key_num, key_str)
+    partition = ""
+    if @num_vbuckets > 1
+      partition = "%2F#{key_num.modulo(@num_vbuckets)}"
+    end
+
+    return "curl http://#{@target}/default#{partition}/#{key_str}"
   end
 end
 
 class StoreMemCache < Store
   require 'memcache'
 
-  def connect(target) # host:port
+  def connect(target, cfg) # host:port
     @target = target
     @conn   = MemCache.new([target])
   end
@@ -204,7 +216,7 @@ class StoreMemCache < Store
     end
   end
 
-  def cmd_line_get(key_str)
+  def cmd_line_get(key_num, key_str)
     return "echo get #{key_str} | nc #{@target.split(':').join(' ')}"
   end
 end
@@ -212,7 +224,7 @@ end
 class StoreDalli < Store
   require 'dalli'
 
-  def connect(target) # host:port
+  def connect(target, cfg) # host:port
     @target = target
     @conn   = Dalli::Client.new([target])
     @opts   = { :raw => true }
@@ -230,7 +242,7 @@ class StoreDalli < Store
     end
   end
 
-  def cmd_line_get(key_str)
+  def cmd_line_get(key_num, key_str)
     return "echo get #{key_str} | nc #{@target.split(':').join(' ')}"
   end
 end
@@ -243,7 +255,7 @@ class StoreMongo < Store
 
   require 'mongo'
 
-  def connect(target) # host:port/dbName/collName
+  def connect(target, cfg) # host:port/dbName/collName
     hp, dbName, collName = target.split('/')
     @host = (hp.split(':')[0] || 'localhost')
     @port = (hp.split(':')[1] || '27017').to_i
@@ -405,13 +417,13 @@ else
   store = StoreDalli.new
 end
 
-store.connect(ARGV[1])
+store.connect(ARGV[1], cfg)
 
 # ----------------------------------------------------------------
 
 print("First 5 keys...\n")
 (0..5).each do |x|
-  print(store.cmd_line_get(prepare_key(x, cfg.prefix)) + "\n")
+  print(store.cmd_line_get(x, prepare_key(x, cfg.prefix)) + "\n")
 end
 
 print("\n")
