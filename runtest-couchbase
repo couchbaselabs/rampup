@@ -273,7 +273,7 @@ end
 
 # ------------------------------------
 
-if index
+if index and not ($cli_kind[0] == 'couchdb' and $num_vbuckets > 1)
   step("index-rebuilding...", nil, w)
 
   run('curl -H "Content-Type: application/json"' +
