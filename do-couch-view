@@ -11,9 +11,7 @@ s = k = 0
 v = ARGV[2] || "last"
 
 extra = ""
-if ARGV[3] == "eq"
-  extra = "&endkey=%22#{k}%22"
-end
+extra = "&endkey=%22#{k}%22" if ARGV[3] == "eq"
 
 cmd_params = ARGV[4] || "_view"
 cmd        = cmd_params.split(',')[0]
