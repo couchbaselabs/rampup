@@ -10,7 +10,7 @@ s = k = 0
 
 v = ARGV[2] || "last"
 
-extra = "gte"
+extra = ""
 if ARGV[3] == "eq"
   extra = "&endkey=%22#{k}%22"
 end
