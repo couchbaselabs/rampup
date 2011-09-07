@@ -18,8 +18,7 @@ s = k = 0
 
 v = ARGV[2] || "last"
 
-extra = ""
-extra = "&endkey=%22#{k}%22" if ARGV[3] == "eq"
+comparison = ARGV[3]
 
 cmd_params = ARGV[4] || "_view"
 cmd        = cmd_params.split(',')[0]
@@ -43,6 +42,9 @@ a = Time.now
 
 MyHTTP.new(host, "5984").start do |http|
   for x in 0..n
+    extra = ""
+    extra = "&endkey=%22#{k}%22" if comparison == "eq"
+
     path = "/default/_design/rampup-#{v}/#{cmd}/#{v}" \
            "?startkey=%22#{k}%22&limit=10#{extra}&stale=ok#{params}"
 
