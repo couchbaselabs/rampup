@@ -4,6 +4,7 @@ require 'net/http'
 require 'uri'
 
 host = ARGV[0]
+base = "http://#{host}:5984"
 
 n = (ARGV[1] || "1000").to_i
 s = k = 0
@@ -20,6 +21,11 @@ if cmd_params.split(',')[1]
   params "&" + cmd_params.split(',')[1]
 end
 
+out = nil
+if ARGV[5]                   # Might be nil.
+  out = IO.new(ARGV[5], 'w') # Allows users to compare to expected output.
+end
+
 class MyHTTP < Net::HTTP
   def on_connect()
     @socket.io.setsockopt(Socket::IPPROTO_TCP, Socket::TCP_NODELAY, 1)
@@ -30,11 +36,20 @@ a = Time.now
 
 MyHTTP.new(host, "5984").start do |http|
   for x in 0..n
-    req = Net::HTTP::Get.new("http://#{host}:5984/default/_design/rampup-#{v}/#{cmd}/#{v}?startkey=%22#{k}%22&limit=10#{extra}&stale=ok#{params}")
+    path = "/default/_design/rampup-#{v}/#{cmd}/#{v}" \
+           "?startkey=%22#{k}%22&limit=10#{extra}&stale=ok#{params}"
+
+    req = Net::HTTP::Get.new(base + path)
     req.add_field('Connection', 'keep-alive')
 
     http.request(req) do |res|
-      res.read_body
+      body = res.read_body
+      if out
+        out.write(path)
+        out.write("\n")
+        out.write(body)
+        out.write("\n")
+      end
     end
 
     k = k + 1
@@ -49,3 +64,7 @@ print "requests #{n}\n"
 print "time #{s}\n"
 print "req/sec #{n / s}\n"
 
+if out
+  out.flush
+  out.close
+end
