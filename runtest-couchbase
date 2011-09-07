@@ -162,6 +162,8 @@ if index
   step("index-building...",
        index_build_cmd)
 
+  print("index_build_cmd: #{index_build_cmd}\n")
+
   # ------------------------------------
 
   step("index-accessing...",
