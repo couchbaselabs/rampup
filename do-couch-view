@@ -27,7 +27,7 @@ a = Time.now
 for x in 0..n
   uri = URI.parse("http://#{host}:5984/default/_design/rampup-#{v}/#{cmd}/#{v}?startkey=%22#{k}%22&limit=10#{extra}&stale=ok#{params}")
   Net::HTTP.new(uri.host, uri.port).start {|http|
-    response = http.request_get(uri.request_uri)
+    http.request_get(uri.request_uri)
     # if response.status != 200
     #   print("ERROR: unexpected response #{response.status} to couch view access - " \
     #         "http://#{host}:5984/default/_design/rampup-#{v}/#{cmd}/#{v}?startkey=%22#{k}%22&limit=10#{extra}&stale=ok#{params}")
