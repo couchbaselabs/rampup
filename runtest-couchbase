@@ -157,6 +157,9 @@ if index
   if $cli_kind[0] == 'couchdb' and $num_vbuckets > 1
     index_build_cmd = "curl -v http://127.0.0.1:5984/default/_design/rampup-last/_set_view/last?limit=10&partitions=#{$num_vbuckets}"
     index_access_extra = "_set_view"
+
+    step("pre-index-build-quiescing...")
+    sleep 5
   end
 
   step("index-building...",
