@@ -152,11 +152,11 @@ step("reading-docs...",
 
 if index
   index_build_cmd = "curl -v http://127.0.0.1:5984/default/_design/rampup-last/_view/last?limit=10"
-  index_access_extra = ""
+  index_access = "_view"
 
   if $cli_kind[0] == 'couchdb' and $num_vbuckets > 1
-    index_build_cmd = "curl -v http://127.0.0.1:5984/default/_design/rampup-last/_set_view/last?limit=10&partitions=#{$num_vbuckets}"
-    index_access_extra = "_set_view"
+    index_build_cmd = "curl -v \"http://127.0.0.1:5984/default/_design/rampup-last/_set_view/last?limit=10\&partitions=#{$num_vbuckets}\""
+    index_access = "_set_view"
 
     step("pre-index-build-quiescing...")
     sleep 5
@@ -170,19 +170,19 @@ if index
   # ------------------------------------
 
   step("index-accessing...",
-       "./do-couch-view 127.0.0.1 10000 last gte #{index_access_extra} >> #{$out_file}",
+       "./do-couch-view 127.0.0.1 10000 last gte #{index_access} >> #{$out_file}",
        nil, 10000)
 
   step("index-accessing2...",
-       "./do-couch-view 127.0.0.1 10000 last gte #{index_access_extra} >> #{$out_file}",
+       "./do-couch-view 127.0.0.1 10000 last gte #{index_access} >> #{$out_file}",
        nil, 10000)
 
   step("index-eq-accessing...",
-       "./do-couch-view 127.0.0.1 10000 last eq #{index_access_extra} >> #{$out_file}",
+       "./do-couch-view 127.0.0.1 10000 last eq #{index_access} >> #{$out_file}",
        nil, 10000)
 
   step("index-eq-accessing2...",
-       "./do-couch-view 127.0.0.1 10000 last eq #{index_access_extra} >> #{$out_file}",
+       "./do-couch-view 127.0.0.1 10000 last eq #{index_access} >> #{$out_file}",
        nil, 10000)
 
   # ------------------------------------
@@ -194,11 +194,11 @@ if index
   # ------------------------------------
 
   index_build_cmd = "curl -v http://127.0.0.1:5984/default/_design/rampup-mid/_view/mid?limit=10"
-  index_access_extra = ""
+  index_access = "_view"
 
   if $cli_kind[0] == 'couchdb' and $num_vbuckets > 1
-    index_build_cmd = "curl -v http://127.0.0.1:5984/default/_design/rampup-mid/_set_view/mid?limit=10&partitions=#{$num_vbuckets}"
-    index_access_extra = "_set_view"
+    index_build_cmd = "curl -v \"http://127.0.0.1:5984/default/_design/rampup-mid/_set_view/mid?limit=10\&partitions=#{$num_vbuckets}\""
+    index_access = "_set_view"
   end
 
   step("index-mid-building...",
@@ -207,19 +207,19 @@ if index
   # ------------------------------------
 
   step("index-mid-accessing...",
-       "./do-couch-view 127.0.0.1 10000 mid gte #{index_access_extra} >> #{$out_file}",
+       "./do-couch-view 127.0.0.1 10000 mid gte #{index_access} >> #{$out_file}",
        nil, 10000)
 
   step("index-mid-accessing2...",
-       "./do-couch-view 127.0.0.1 10000 mid gte #{index_access_extra} >> #{$out_file}",
+       "./do-couch-view 127.0.0.1 10000 mid gte #{index_access} >> #{$out_file}",
        nil, 10000)
 
   step("index-mid-eq-accessing...",
-       "./do-couch-view 127.0.0.1 10000 mid eq #{index_access_extra} >> #{$out_file}",
+       "./do-couch-view 127.0.0.1 10000 mid eq #{index_access} >> #{$out_file}",
        nil, 10000)
 
   step("index-mid-eq-accessing2...",
-       "./do-couch-view 127.0.0.1 10000 mid eq #{index_access_extra} >> #{$out_file}",
+       "./do-couch-view 127.0.0.1 10000 mid eq #{index_access} >> #{$out_file}",
        nil, 10000)
 
   # ------------------------------------
@@ -231,11 +231,11 @@ if index
   # ------------------------------------
 
   index_build_cmd = "curl -v http://127.0.0.1:5984/default/_design/rampup-mid-erlang/_view/mid-erlang?limit=10"
-  index_access_extra = ""
+  index_access = "_view"
 
   if $cli_kind[0] == 'couchdb' and $num_vbuckets > 1
-    index_build_cmd = "curl -v http://127.0.0.1:5984/default/_design/rampup-mid-erlang/_set_view/mid-erlang?limit=10&partitions=#{$num_vbuckets}"
-    index_access_extra = "_set_view"
+    index_build_cmd = "curl -v \"http://127.0.0.1:5984/default/_design/rampup-mid-erlang/_set_view/mid-erlang?limit=10\&partitions=#{$num_vbuckets}\""
+    index_access = "_set_view"
   end
 
   step("index-mid-erlang-building...",
