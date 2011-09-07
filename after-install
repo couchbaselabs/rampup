@@ -15,6 +15,8 @@ cp /opt/couchbase/bin/membase-server /opt/couchbase/bin/membase-server.orig || t
 
 sudo /etc/init.d/couchbase-server stop || true
 
+sudo killall heart beam.smp || true
+
 rm -f membase-server.num_vbuckets
 wget -O membase-server.num_vbuckets https://raw.github.com/couchbaselabs/rampup/master/membase-server.num_vbuckets
 
