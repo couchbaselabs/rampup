@@ -3,6 +3,13 @@
 require 'net/http'
 require 'uri'
 
+if ARGV.length < 1
+  print("usage: ./do-couch-view HOST [ OPT-NUM-OPS OPT-VIEW-NAME OPT-COMPARISON OPT-VIEW-CMD OPT-OUT-FILE ]\n" \
+        "       ./do-couch-view 127.0.0.1 1000 last eq _view ~/tmp/view.out\n" \
+        "       ./do-couch-view 127.0.0.1 1000 myView gte _set_view ~/tmp/view.out\n")
+  exit(-1)
+end
+
 host = ARGV[0]
 base = "http://#{host}:5984"
 
