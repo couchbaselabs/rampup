@@ -150,6 +150,10 @@ step("reading-docs...",
 
 # ------------------------------------
 
+def capture_response(name)
+  return $out_file + "_#{name}.res"
+end
+
 if index
   index_build_cmd = "curl -v http://127.0.0.1:5984/default/_design/rampup-last/_view/last?limit=10"
   index_access = "_view"
@@ -170,19 +174,19 @@ if index
   # ------------------------------------
 
   step("index-accessing...",
-       "./do-couch-view 127.0.0.1 10000 last gte #{index_access} >> #{$out_file}",
+       "./do-couch-view 127.0.0.1 10000 last gte #{index_access} #{capture_response("index-accessing")} >> #{$out_file}",
        nil, 10000)
 
   step("index-accessing2...",
-       "./do-couch-view 127.0.0.1 10000 last gte #{index_access} >> #{$out_file}",
+       "./do-couch-view 127.0.0.1 10000 last gte #{index_access} #{capture_response("index-accessing2")} >> #{$out_file}",
        nil, 10000)
 
   step("index-eq-accessing...",
-       "./do-couch-view 127.0.0.1 10000 last eq #{index_access} >> #{$out_file}",
+       "./do-couch-view 127.0.0.1 10000 last eq #{index_access} #{capture_response("index-eq-accessing")} >> #{$out_file}",
        nil, 10000)
 
   step("index-eq-accessing2...",
-       "./do-couch-view 127.0.0.1 10000 last eq #{index_access} >> #{$out_file}",
+       "./do-couch-view 127.0.0.1 10000 last eq #{index_access} #{capture_response("index-eq-accessing2")} >> #{$out_file}",
        nil, 10000)
 
   # ------------------------------------
@@ -207,19 +211,19 @@ if index
   # ------------------------------------
 
   step("index-mid-accessing...",
-       "./do-couch-view 127.0.0.1 10000 mid gte #{index_access} >> #{$out_file}",
+       "./do-couch-view 127.0.0.1 10000 mid gte #{index_access} #{capture_response("index-mid-accessing")} >> #{$out_file}",
        nil, 10000)
 
   step("index-mid-accessing2...",
-       "./do-couch-view 127.0.0.1 10000 mid gte #{index_access} >> #{$out_file}",
+       "./do-couch-view 127.0.0.1 10000 mid gte #{index_access} #{capture_response("index-mid-accessing2")} >> #{$out_file}",
        nil, 10000)
 
   step("index-mid-eq-accessing...",
-       "./do-couch-view 127.0.0.1 10000 mid eq #{index_access} >> #{$out_file}",
+       "./do-couch-view 127.0.0.1 10000 mid eq #{index_access} #{capture_response("index-mid-eq-accessing")} >> #{$out_file}",
        nil, 10000)
 
   step("index-mid-eq-accessing2...",
-       "./do-couch-view 127.0.0.1 10000 mid eq #{index_access} >> #{$out_file}",
+       "./do-couch-view 127.0.0.1 10000 mid eq #{index_access} #{capture_response("index-mid-eq-accessing2")} >> #{$out_file}",
        nil, 10000)
 
   # ------------------------------------
