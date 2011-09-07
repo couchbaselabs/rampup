@@ -29,8 +29,8 @@ if cmd_params.split(',')[1]
 end
 
 out = nil
-if ARGV[5]                   # Might be nil.
-  out = IO.new(ARGV[5], 'w') # Allows users to compare to expected output.
+if ARGV[5]                     # Optional output file path.
+  out = File.new(ARGV[5], 'w') # Allows users to compare to expected output.
 end
 
 class MyHTTP < Net::HTTP
