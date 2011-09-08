@@ -178,11 +178,10 @@ class StoreCouchDB < Store
       request = Net::HTTP::Post.new(uri.request_uri)
       request['Content-Type'] = "application/json"
       request.body = "{\"docs\":[#{docs.join(',')}]}"
+      @http.request(request)
     end
 
     @bulk = {}
-
-    return @http.request(request)
   end
 
   def gen_doc(key_num, key_str, min_value_size)
