@@ -1,4 +1,6 @@
-require(rjson)
+require(reshape, quietly=TRUE)
+require(plyr, quietly=TRUE)
+require(rjson, quietly=TRUE)
 
 getData <- function(subpath, urlBase='http://localhost:5984/viewperf/') {
   fromJSON(file=paste(urlBase, subpath, sep=''))$rows
@@ -13,11 +15,11 @@ getFlatData <- function(sub, n=NULL) {
 }
 
 listTests <- function() {
-  unlist(rbind(getFlatData('_design/rviews/_view/by_test?group_level=1')[,c(1)]))
+  unlist(rbind(getFlatData('_design/rviews/_view/by_test?group_level=1')[,c(1)]))[1,]
 }
 
 listUploads <- function() {
-  unlist(rbind(getFlatData('_design/rviews/_view/by_upload?group_level=1')[,c(1)]))
+  unlist(rbind(getFlatData('_design/rviews/_view/by_upload?group_level=1')[,c(1)]))[1,]
 }
 
 getRunData <- function(view, name) {
