@@ -138,7 +138,7 @@ class StoreCouchDB < Store
     @target = target
     @http = Net::HTTP.new(target.split(':')[0],
                           target.split(':')[1].to_i)
-    @bulk = []
+    @bulk = {}
     @num_vbuckets = cfg.num_vbuckets
   end
 
@@ -155,8 +155,9 @@ class StoreCouchDB < Store
       return @http.request(request)
     when :set
       if bulk_load_batch > 1
-        @bulk << data
-        if @bulk.length > bulk_load_batch
+        @bulk[partition] ||= []
+        @bulk[partition] << data
+        if @bulk[partition].length > bulk_load_batch
           flush
         end
       else
@@ -172,12 +173,14 @@ class StoreCouchDB < Store
   end
 
   def flush()
-    uri = URI.parse("http://#{@target}/default/_bulk_docs")
-    request = Net::HTTP::Post.new(uri.request_uri)
-    request['Content-Type'] = "application/json"
-    request.body = "{\"docs\":[#{@bulk.join(',')}]}"
+    @bulk.each_pair do |partition, docs|
+      uri = URI.parse("http://#{@target}/default#{partition}/_bulk_docs")
+      request = Net::HTTP::Post.new(uri.request_uri)
+      request['Content-Type'] = "application/json"
+      request.body = "{\"docs\":[#{docs.join(',')}]}"
+    end
 
-    @bulk = []
+    @bulk = {}
 
     return @http.request(request)
   end

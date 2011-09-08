@@ -104,8 +104,7 @@ load_design_doc('last')
 
 # ------------------------------------
 
-bulk_load_batch = 0
-bulk_load_batch = 100 if $num_vbuckets <= 0
+bulk_load_batch = 100
 
 step("loading-docs...",
      "./rampup-client #{$cli_kind[0]} 127.0.0.1:#{$cli_kind[1]}" \
