@@ -22,34 +22,11 @@ prettySize <- function(s, fmt="%.2f") {
 }
 
 buildComparison <- function(df, field, value) {
-  df.m <- df[df[,field] == value,]
-
-  for (v in unique(df$vbuckets)) {
-    for (i in unique(df$items)) {
-      for (s in unique(df$size)) {
-        for (l in unique(df$label)) {
-          replacement <- df.m[df.m$items == i &
-                              df.m$size == s &
-                              df.m$label == l, 'time']
-          if (length(replacement) == 0) {
-            replacement = NA
-          }
-          df[df$items == i &
-             df$size == s &
-             df$label == l &
-             df$vbuckets == v, 'comptime'] <- replacement
-        }
-      }
-    }
-  }
-  transform(df, xtime=time / comptime)
-}
-
-buildComparison2 <- function(df, field, value) {
-  df.m <- df[df[,field] == value,]
-  df$comptime <- join(df[,c('items', 'size', 'label')],
-                      df.m, by=c('items', 'size', 'label'))$time
-  df
+  dfsub <- df[df[,field] == value,]
+  colnames(dfsub)[7] <- 'comptime'
+  rv <- merge(df, dfsub[,-(1:3)])
+  rv <- transform(rv, xtime=time / comptime)
+  rv[order(rv$build, rv$vbuckets, decreasing=TRUE),]
 }
 
 makeOne <- function(r, filename) {
@@ -59,26 +36,28 @@ makeOne <- function(r, filename) {
   r$software_v <- factor(r$software_v, levels=unique(r$software_v), ordered=TRUE)
 
   for(items in unique(r$items)) {
-    for(label in unique(r$label)) {
-      d <- r[r$items == items  & r$label == label,]
-      d$item_size <- d$size
-      if (length(d[,1]) > 1) {
-        cat("Doing", comma(items), label, "\n")
-        p <- ggplot(data=d, aes(software_v, time, fill=build)) +
-          geom_bar(stat='identity', position='dodge') + coord_flip() +
+    for(item_size in unique(r$size)) {
+      for(label in unique(r$label)) {
+        d <- r[r$items == items  & r$label == label & r$size == item_size,]
+        d$item_size <- d$size
+        if (length(d[,1]) > 1) {
+          cat("Doing", label, "over", comma(items), prettySize(item_size), "items\n")
+          p <- ggplot(data=d, aes(software_v, time, fill=build)) +
+            geom_bar(stat='identity', position='dodge') + coord_flip() +
             opts(legend.position = "none") +
-              opts(title=paste(comma(items), " items -", label)) +
-                facet_wrap(nodes ~ item_size ~ items, ncol=1, scales='free') +
-                  labs(y='Seconds', x='')
+            opts(title=paste(comma(items), " items -", label)) +
+            facet_wrap(~nodes, ncol=1, scales='free') +
+            labs(y='Seconds', x='')
 
-        if (! is.na(d$comptime[[1]])) {
-          p <- p + geom_text(aes(y = time, size=2, hjust=1,
-                                 label=sprintf("%.2fx", xtime)))
+          if (! is.na(d$comptime[[1]])) {
+            p <- p + geom_text(aes(y = time, size=2, hjust=1,
+                                   label=sprintf("%.2fx", xtime)))
+          }
+
+          print(p)
+        } else {
+          cat("Skipping", comma(items), label, "\n")
         }
-
-        print(p)
-      } else {
-        cat("Skipping", comma(items), label, "\n")
       }
     }
   }
