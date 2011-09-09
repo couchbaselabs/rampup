@@ -145,6 +145,19 @@ without killing the run.  Like...
 NOTE: The nohup approach might not work well with cluster testing due
 to ssh interactions.
 
+# Monitoring progress
+
+Monitoring the output of the out subdir can be helpful to see progress...
+
+    watch -d "ls -alt out/test*/*"
+
+And...
+
+    watch -d "ls -at out/test*/*.out | head -n 1 | xargs tail -n 30"
+
+Hint: check that "items/sec" isn't too crazy (unbelievably fast), as
+that might indicate some weird issue with data loading or accessing.
+
 # R
 
 To generate nice PDF graphs, we use the R tool.  Please see the report subdirectory.
