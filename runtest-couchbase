@@ -60,7 +60,7 @@ run "sudo ./after-install #{$num_vbuckets}"
 
 step("configuring...")
 
-if $join_url
+if $join_url and $join_url.length > 0
   sleep(3)
   my_ip = `/sbin/ifconfig eth0|grep inet|awk {'print $2'}|cut -d":" -f2|head -n 1`
   run "/opt/#{$pkg_base}/bin/membase server-add -c #{$join_url} \
