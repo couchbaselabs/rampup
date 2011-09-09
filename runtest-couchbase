@@ -74,6 +74,7 @@ else
   run "/opt/#{$pkg_base}/bin/membase cluster-init -c 127.0.0.1 \
     --cluster-init-username=Administrator \
     --cluster-init-password=password"
+  sleep(3)
   run "/opt/#{$pkg_base}/bin/membase bucket-create -c 127.0.0.1 \
     -u Administrator -p password \
     --bucket=default --bucket-type=membase --bucket-password= \
