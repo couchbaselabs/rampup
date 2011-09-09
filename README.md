@@ -31,6 +31,11 @@ The above will run a matrix of...
 It takes quite awhile on one of our physical perf box. You could cut
 down the matrix inputs to make it faster.
 
+So, to run something quick, cut down the test matrix to use less data
+and dimensions...
+
+    ./runtests couchbase-server-community_x86_64_2.0.0r-12-g9ef46c9.rpm 5000 0 100000 1 64-64 128,10240
+
 The output files will appear in the ./out subdirectory.
 
 To upload those to a couchdb for further analysis, use...
@@ -39,7 +44,7 @@ To upload those to a couchdb for further analysis, use...
 
 For example:
 
-    ./results-store http://single.couchbase.net/viewperf physical out/*/*
+    ./results-store http://single.couchbase.net/viewperf physical out/test-*/*.out
 
 ## Notes on prerequisites
 
@@ -48,6 +53,8 @@ Required gem's...
     gem install memcache dalli
 
 ### On Amazon Default Linux
+
+You'll need the right openssl...
 
     sudo yum install openssl098e
 
@@ -88,17 +95,7 @@ If you also want to test mongo...
 
 # R
 
-Visit r-project.org / CRAN.
+To generate nice PDF graphs, we use the R tool.  Please see the report subdirectory.
 
-R 2.13.1
-
-Favor R64.app
-
-install.packages(c("rjson", "ggplot2"))
-
-require(ggplot2)
-
-x <- getUpload(head(listUploads(), 1)[[1]])
-
-unique(x$label)
+To get R, see r-project.org / CRAN, and if you're running on a mac, favor R64.app.
 
