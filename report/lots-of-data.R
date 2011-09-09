@@ -89,6 +89,7 @@ uploadName <- commandArgs(TRUE)
 
 if (length(uploadName) > 0) {
   df <- getUpload(uploadName)
+  df[df$nodes == 0,]$nodes <- 1
   df.relative <- buildComparison(df, 'build', 'mongodb-64-2.0.0-rc1')
 
   makeOne(df.relative, paste(uploadName, '.pdf', sep=''))
