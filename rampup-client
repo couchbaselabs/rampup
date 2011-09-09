@@ -91,7 +91,11 @@ print("\n")
 
 # ----------------------------------------------------------------
 
-$body   = 'x' * cfg.min_value_size
+$body = 'x';
+while $body.length < cfg.min_value_size
+  $body = $body + Digest::MD5.hexdigest($body.length.to_s)
+end
+
 $suffix = "\"body\":\"#{$body}\"}"
 
 def gen_doc_hash(key_num, key_str, min_value_size)
