@@ -390,19 +390,8 @@ def choose_key_num(num_items, ratio_hot, ratio_hot_choice, num_ops)
   return base + num_ops.modulo(range)
 end
 
-$collisions = {}
-
 def prepare_key(key_num, prefix)
   key_hash = Digest::MD5.hexdigest(key_num.to_s)[0..15]
-
-  if false
-    prev = $collisions[key_hash]
-    if prev and prev != key_num
-      print("collision: #{key_num} #{prev}\n")
-      exit(-1)
-    end
-    $collisions[key_hash] = key_num
-  end
 
   return "#{prefix}-#{key_hash}" if prefix and prefix.length > 0
   return "#{key_hash}"
