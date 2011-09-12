@@ -156,6 +156,8 @@ def capture_response(name)
 end
 
 if index
+  num_views = 10000
+
   step("pre-index-build-quiescing...")
   sleep 5
 
@@ -185,20 +187,20 @@ if index
   # ------------------------------------
 
   step("index-accessing...",
-       "./do-couch-view 127.0.0.1 10000 last gte #{index_access} #{capture_response("index-accessing")} >> #{$out_file}",
-       nil, 10000)
+       "./do-couch-view 127.0.0.1 #{num_views} last gte #{index_access} #{capture_response("index-accessing")} >> #{$out_file}",
+       nil, num_views)
 
   step("index-accessing2...",
-       "./do-couch-view 127.0.0.1 10000 last gte #{index_access} #{capture_response("index-accessing2")} >> #{$out_file}",
-       nil, 10000)
+       "./do-couch-view 127.0.0.1 #{num_views} last gte #{index_access} #{capture_response("index-accessing2")} >> #{$out_file}",
+       nil, num_views)
 
   step("index-eq-accessing...",
-       "./do-couch-view 127.0.0.1 10000 last eq #{index_access} #{capture_response("index-eq-accessing")} >> #{$out_file}",
-       nil, 10000)
+       "./do-couch-view 127.0.0.1 #{num_views} last eq #{index_access} #{capture_response("index-eq-accessing")} >> #{$out_file}",
+       nil, num_views)
 
   step("index-eq-accessing2...",
-       "./do-couch-view 127.0.0.1 10000 last eq #{index_access} #{capture_response("index-eq-accessing2")} >> #{$out_file}",
-       nil, 10000)
+       "./do-couch-view 127.0.0.1 #{num_views} last eq #{index_access} #{capture_response("index-eq-accessing2")} >> #{$out_file}",
+       nil, num_views)
 
   # ------------------------------------
 
@@ -216,20 +218,20 @@ if index
   # ------------------------------------
 
   step("index-mid-accessing...",
-       "./do-couch-view 127.0.0.1 10000 mid gte #{index_access} #{capture_response("index-mid-accessing")} >> #{$out_file}",
-       nil, 10000)
+       "./do-couch-view 127.0.0.1 #{num_views} mid gte #{index_access} #{capture_response("index-mid-accessing")} >> #{$out_file}",
+       nil, num_views)
 
   step("index-mid-accessing2...",
-       "./do-couch-view 127.0.0.1 10000 mid gte #{index_access} #{capture_response("index-mid-accessing2")} >> #{$out_file}",
-       nil, 10000)
+       "./do-couch-view 127.0.0.1 #{num_views} mid gte #{index_access} #{capture_response("index-mid-accessing2")} >> #{$out_file}",
+       nil, num_views)
 
   step("index-mid-eq-accessing...",
-       "./do-couch-view 127.0.0.1 10000 mid eq #{index_access} #{capture_response("index-mid-eq-accessing")} >> #{$out_file}",
-       nil, 10000)
+       "./do-couch-view 127.0.0.1 #{num_views} mid eq #{index_access} #{capture_response("index-mid-eq-accessing")} >> #{$out_file}",
+       nil, num_views)
 
   step("index-mid-eq-accessing2...",
-       "./do-couch-view 127.0.0.1 10000 mid eq #{index_access} #{capture_response("index-mid-eq-accessing2")} >> #{$out_file}",
-       nil, 10000)
+       "./do-couch-view 127.0.0.1 #{num_views} mid eq #{index_access} #{capture_response("index-mid-eq-accessing2")} >> #{$out_file}",
+       nil, num_views)
 
   # ------------------------------------
 
@@ -247,8 +249,8 @@ if index
   # ------------------------------------
 
   step("index-lastCount-accessing...",
-       "./do-couch-view 127.0.0.1 10000 lastCount gte #{index_access} #{capture_response("index-lastCount-accessing")} >> #{$out_file}",
-       nil, 10000)
+       "./do-couch-view 127.0.0.1 #{num_views} lastCount gte #{index_access} #{capture_response("index-lastCount-accessing")} >> #{$out_file}",
+       nil, num_views)
 
   # ------------------------------------
 
