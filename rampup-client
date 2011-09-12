@@ -1,10 +1,11 @@
 #!/usr/bin/env ruby
 
+require 'rubygems'
+require 'digest/md5'
 require 'net/http'
 require 'uri'
-require 'digest/md5'
-require 'rubygems'
-require 'rampup-store'
+
+require './rampup-store'
 
 $cfg_defaults = {
   :prefix => "",           # Prefix for every item key.
