@@ -1,0 +1,9 @@
+{
+  "_id" : "_design/rampup-lastCount",
+  "views" : {
+    "lastCount" : {
+      "map" : "function(doc){ emit(doc.last, null)}",
+      "reduce": "_count"
+    }
+  }
+}

@@ -229,6 +229,31 @@ if index
 
   # ------------------------------------
 
+  step("index-lastCount-design...")
+
+  load_design_doc('lastCount')
+
+  # ------------------------------------
+
+  step("index-lastCount-accessing...",
+       "./do-couch-view 127.0.0.1 10000 lastCount gte #{index_access} #{capture_response("index-lastCount-accessing")} >> #{$out_file}",
+       nil, 10000)
+
+  # ------------------------------------
+
+  index_build_cmd = "curl -v http://127.0.0.1:5984/default/_design/rampup-lastCount/_view/lastCount?limit=10"
+  index_access = "_view"
+
+  if $cli_kind[0] == 'couchdb' and $num_vbuckets > 1
+    index_build_cmd = "curl -v \"http://127.0.0.1:5984/default/_design/rampup-lastCount/_set_view/lastCount?limit=10\&partitions=#{$num_vbuckets}\""
+    index_access = "_set_view"
+  end
+
+  step("index-lastCount-building...",
+       index_build_cmd)
+
+  # ------------------------------------
+
   step("index-mid-erlang-design...")
 
   load_design_doc('mid-erlang')
