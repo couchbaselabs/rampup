@@ -139,7 +139,7 @@ step("loading-docs...",
 # ------------------------------------
 
 step("loading-persisted...",
-     "#{$mongo_base}/bin/mongo 127.0.0.1:27017/admin fsync.js")
+     "#{$mongo_base}/bin/mongo 127.0.0.1:27017/admin mongo-fsync.js")
 
 # ------------------------------------
 

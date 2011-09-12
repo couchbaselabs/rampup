@@ -93,10 +93,10 @@ end
 def load_design_doc(kind)
   if $cli_kind[0] == 'couchdb' and $num_vbuckets > 1
     run "curl -vX PUT http://127.0.0.1:5984/default%2Fmaster"
-    run "curl -vX PUT http://127.0.0.1:5984/default%2Fmaster/_design/rampup-#{kind} -d @rampup-#{kind}.json"
+    run "curl -vX PUT http://127.0.0.1:5984/default%2Fmaster/_design/rampup-#{kind} -d @index/rampup-#{kind}.json"
   else
     run "curl -vX PUT http://127.0.0.1:5984/default"
-    run "curl -vX PUT http://127.0.0.1:5984/default/_design/rampup-#{kind} -d @rampup-#{kind}.json"
+    run "curl -vX PUT http://127.0.0.1:5984/default/_design/rampup-#{kind} -d @index/rampup-#{kind}.json"
   end
 
   sleep 1
