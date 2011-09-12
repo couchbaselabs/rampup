@@ -160,12 +160,12 @@ step("non-index-accessing...",
 # ------------------------------------
 
 step("index-building...",
-     "#{$mongo_base}/bin/mongo 127.0.0.1:27017/test ensureIndex-last.js")
+     "#{$mongo_base}/bin/mongo 127.0.0.1:27017/test index/ensureIndex-last.js")
 
 # ------------------------------------
 
 step("fsyncing...",
-     "#{$mongo_base}/bin/mongo 127.0.0.1:27017/admin fsync.js")
+     "#{$mongo_base}/bin/mongo 127.0.0.1:27017/admin mongo-fsync.js")
 
 # ------------------------------------
 
@@ -188,7 +188,7 @@ step("index-eq-accessing2...",
 # ------------------------------------
 
 step("index-mid-building...",
-     "#{$mongo_base}/bin/mongo 127.0.0.1:27017/test ensureIndex-mid.js")
+     "#{$mongo_base}/bin/mongo 127.0.0.1:27017/test index/ensureIndex-mid.js")
 
 # ------------------------------------
 
@@ -230,7 +230,7 @@ coll.find({"last" => 0}).limit(10).each {|doc| doc }
 # ------------------------------------
 
 step("index-rebuilding...",
-     "#{$mongo_base}/bin/mongo 127.0.0.1:27017/test reIndex-last.js")
+     "#{$mongo_base}/bin/mongo 127.0.0.1:27017/test index/reIndex-last.js")
 
 coll.find({"last" => 0}).limit(10).each {|doc| doc }
 
