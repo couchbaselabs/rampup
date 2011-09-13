@@ -211,6 +211,31 @@ step("index-mid-eq-accessing2...",
 
 # ------------------------------------
 
+ops_per_concurrent_client = 10000
+
+step("concurrent-usage...",
+     nil, nil, $concurrency * ops_per_concurrent_client)
+
+proc_stats_start()
+
+pids = (1..$concurrency).map do |x|
+  fork do
+    run("./rampup-client mongo 127.0.0.1:27017" \
+        " min_value_size=#{$val_size}" \
+        " num_items=#{$num_items}" \
+        " max_ops=#{ops_per_concurrent_client}")
+    exit
+  end
+end
+
+pids.map {|pid| [pid, Process.wait2(pid)] }
+
+print pids
+
+proc_stats_end()
+
+# ------------------------------------
+
 step("stopping...",
      "killall -9 mongos && killall -SIGINT mongod")
 
