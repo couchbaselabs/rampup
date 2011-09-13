@@ -119,8 +119,8 @@ so that runtests's attempts to ssh to other boxes will work.
 
 The runtest tool also has the ability to spin up nodes on-the-fly via
 the Amazon EC2 Cloud Formation API.  Set the cluster.type option to
-'new-stack' to use this (less popular) approach.  The Cloud Formation
-tools (cfn commands) must also be installed for this to work.
+'cfn' to use this (less popular) approach.  The Cloud Formation tools
+(cfn commands) must also be pre-installed for this to work.
 
 # Testing other software
 

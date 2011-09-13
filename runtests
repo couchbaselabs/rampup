@@ -91,9 +91,9 @@ def prepare_cluster(pkg_in, ram_quota, replica_count,
                     num_items, nodes, vbuckets, val_size, opts)
   return nil if nodes <= 1
 
-  if opts['cluster.type'] == 'new-stack'
-    return prepare_cluster_new_stack(pkg_in, ram_quota, replica_count,
-                                     num_items, nodes, vbuckets, val_size, opts)
+  if opts['cluster.type'] == 'cfn'
+    return prepare_cluster_cfn(pkg_in, ram_quota, replica_count,
+                               num_items, nodes, vbuckets, val_size, opts)
   end
 
   return prepare_cluster_existing(pkg_in, ram_quota, replica_count,
@@ -104,9 +104,9 @@ def teardown_cluster(pkg, ram_quota, replica_count,
                      num_items, nodes, vbuckets, val_size, opts)
   return if nodes <= 1
 
-  if opts['cluster.type'] == 'new-stack'
-    return teardown_cluster_new_stack(pkg, ram_quota, replica_count,
-                                      num_items, nodes, vbuckets, val_size, opts)
+  if opts['cluster.type'] == 'cfn'
+    return teardown_cluster_cfn(pkg, ram_quota, replica_count,
+                                num_items, nodes, vbuckets, val_size, opts)
   end
 
   return teardown_cluster_existing(pkg, ram_quota, replica_count,
@@ -115,8 +115,8 @@ end
 
 # ------------------------------------------
 
-def prepare_cluster_new_stack(pkg_in, ram_quota, replica_count,
-                              num_items, nodes, vbuckets, val_size, opts)
+def prepare_cluster_cfn(pkg_in, ram_quota, replica_count,
+                        num_items, nodes, vbuckets, val_size, opts)
   return nil if nodes <= 1
 
   # Prepare an AWS EC2 CloudFormation cluster (or a stack) with nodes number of nodes.
@@ -165,7 +165,7 @@ def prepare_cluster_new_stack(pkg_in, ram_quota, replica_count,
   end
 end
 
-def teardown_cluster_new_stack(pkg, ram_quota, replica_count,
+def teardown_cluster_cfn(pkg, ram_quota, replica_count,
                                num_items, nodes, vbuckets, val_size, opts)
   return if nodes <= 1
 
