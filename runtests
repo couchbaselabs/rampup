@@ -44,8 +44,8 @@ opts = {
   'stack.PackageVerBase' => '2.0.0',
   'stack.KeyName' => 'steveyen-key',
   'stack.InstanceType' => 'm1.large',
-  'wget' => 'y',
-  'rpm' => 'y'
+  'download' => 'y', # Whether we should download the target software pkg.
+  'install' => 'y'   # Whether we should install the target software pkg.
 }
 
 (ARGV[7] || "").split(',').each {|x|
@@ -189,8 +189,7 @@ def prepare_cluster_existing(pkg_in, ram_quota, replica_count,
     exit(-1)
   end
 
-  # Prepare an AWS EC2 cluster (or a stack) from an
-  # existing list of pre-launched machines.
+  # Prepare a cluster a list of existing, pre-launched machines.
   #
   pkg      = pkg_in
   pkg      = pkg.split('/')[-1]
@@ -204,11 +203,11 @@ def prepare_cluster_existing(pkg_in, ram_quota, replica_count,
   while i < nodes
     host = hosts[i - 1]
 
-    if opts['wget'] == 'y'
+    if opts['download'] == 'y'
       run "#{$ssh} #{user}@#{host} sudo wget -O #{pkg_in} #{pkg_url}"
     end
 
-    if opts['rpm'] == 'y'
+    if opts['install'] == 'y'
       run "#{$ssh} #{user}@#{host} sudo rpm -i #{pkg_in}"
     end
 
@@ -261,11 +260,11 @@ def teardown_cluster_existing(pkg_in, ram_quota, replica_count,
     run "#{$ssh} #{user}@#{host} sudo killall -9 beam.smp"
     run "#{$ssh} #{user}@#{host} sudo killall -9 epmd"
 
-    if opts['rpm'] == 'y'
+    if opts['install'] == 'y'
       run "#{$ssh} #{user}@#{host} sudo rpm -e #{pkg_base}-server"
     end
 
-    if opts['wget'] == 'y'
+    if opts['download'] == 'y'
       run "#{$ssh} #{user}@#{host} sudo rm -rf /opt/#{pkg_base} #{pkg_in}"
     end
   end
