@@ -25,8 +25,9 @@ $replica_count = ARGV[3]
 $num_items     = (ARGV[4] || "1000").to_i
 $num_vbuckets  = ARGV[5]
 $val_size      = (ARGV[6] || "1000").to_i
-$shards        = (ARGV[7] || "").split(',')
-$extra_sleep   = ARGV[8]
+$concurrency   = (ARGV[7] || "10").to_i
+$shards        = (ARGV[8] || "").split(',')
+$extra_sleep   = ARGV[9]
 
 # ------------------------------------
 

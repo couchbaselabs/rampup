@@ -24,8 +24,10 @@ $replica_count = ARGV[3]
 $num_items     = ARGV[4]
 $num_vbuckets  = ARGV[5].to_i
 $val_size      = ARGV[6] || "1000"
-$join_url      = ARGV[7]
-$extra_sleep   = ARGV[8]
+$concurrency   = (ARGV[7] || "10").to_i
+$join_url      = ARGV[8]
+$extra_sleep   = ARGV[9]
+
 
 index = true
 index = false if $pkg_base == 'membase'
@@ -264,6 +266,34 @@ if index
 
   step("index-mid-erlang-building...",
        index_build_cmd)
+end
+
+# ------------------------------------
+
+if $cli_kind[0] != 'couchdb'
+  ops_per_concurrent_client = 10000
+
+  step("concurrent-usage...",
+       nil, nil, $concurrency * ops_per_concurrent_client)
+
+  proc_stats_start()
+
+  pids = (1..$concurrency).map do |x|
+    fork do
+      run("./rampup-client #{$cli_kind[0]} 127.0.0.1:#{$cli_kind[1]}" \
+          " min_value_size=#{$val_size}" \
+          " num_items=#{$num_items}" \
+          " num_vbuckets=#{$num_vbuckets}" \
+          " max_ops=#{ops_per_concurrent_client}")
+      exit
+    end
+  end
+
+  pids.map {|pid| [pid, Process.wait2(pid)] }
+
+  print pids
+
+  proc_stats_end()
 end
 
 # ------------------------------------
