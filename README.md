@@ -111,8 +111,8 @@ Fake example...
        5000 0 100000,1000000 4,2,1 1-64 128,1024,10240 \
        cluster.user=root,cluster.hosts=10.2.1.14+10.2.1.13+10.2.1.12+10.2.1.11,cluster.package-url-base=http://couchbase.net/dev-builds
 
-The test also depend on ssh access to remote machines, so you might
-want to ssh-add and use ssh agent forwarding ("ssh -A joe@10.2.1.15")
+The cluster tests also depend on ssh access to remote machines, so you
+might want to ssh-add and use ssh agent forwarding ("ssh -A joe@10.2.1.15")
 so that runtests's attempts to ssh to other boxes will work.
 
 ## EC2 Cloud Formation testing
@@ -121,6 +121,11 @@ The runtest tool also has the ability to spin up nodes on-the-fly via
 the Amazon EC2 Cloud Formation API.  Set the cluster.type option to
 'cfn' to use this (less popular) approach.  The Cloud Formation tools
 (cfn commands) must also be pre-installed for this to work.
+
+You'll probably find, however, that spinning up a brand new cluster
+is somewhat slow, and not great for fast turnaround or debuggability.
+Instead, the previous, "static" pre-existing cluster approach seems
+to work much better.
 
 # Testing other software
 
@@ -155,12 +160,15 @@ And...
 
     watch -d "ls -at out/test*/*.out | head -n 1 | xargs tail -n 30"
 
-Hint: check that "items/sec" isn't too crazy (unbelievably fast), as
-that might indicate some weird issue with data loading or accessing.
+Hint: check that "items/sec" isn't too crazy (unbelievably fast, or
+greater than 100,000 items/sec), as that might indicate some weird
+issue with data loading or accessing.
 
 # R
 
-To generate nice PDF graphs, we use the R tool.  Please see the report subdirectory.
+To generate nice PDF graphs, we use the R tool.  Please see the report
+subdirectory.
 
-To get R, see r-project.org / CRAN, and if you're running on a mac, favor R64.app.
+To get R, see r-project.org / CRAN, and if you're running on a mac,
+favor R64.app.
 
