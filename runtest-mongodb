@@ -1,7 +1,8 @@
 #!/usr/bin/env ruby
 
 if ARGV.length < 4
-  print("runtest TEST_NAME MONGO RAM_QUOTA REPLICA_COUNT NUM_ITEMS NUM_VBUCKETS VAL_SIZE [SHARDS] [EXTRA_SLEEP]\n")
+  print("runtest TEST_NAME MONGO RAM_QUOTA REPLICA_COUNT" \
+        " NUM_ITEMS NUM_VBUCKETS VAL_SIZE CONCURRENCY [SHARDS] [key=val, ...]\n")
   exit(-1)
 end
 
@@ -26,8 +27,15 @@ $num_items     = (ARGV[4] || "1000").to_i
 $num_vbuckets  = ARGV[5]
 $val_size      = (ARGV[6] || "1000").to_i
 $concurrency   = (ARGV[7] || "10").to_i
-$shards        = (ARGV[8] || "").split(',')
-$extra_sleep   = ARGV[9]
+$shards        = (ARGV[8] || "").split(',').select {|x| x != 'none' }
+
+$opts = {}
+(ARGV[9] || "").split(',').each {|x|
+  key, val = x.split('=')
+  $opts[key] = val
+}
+
+$extra_sleep = $opts['extra_sleep']
 
 # ------------------------------------
 

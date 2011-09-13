@@ -1,7 +1,8 @@
 #!/usr/bin/env ruby
 
 if ARGV.length < 4
-  print("runtest TEST_NAME PKG_RPM RAM_QUOTA REPLICA_COUNT NUM_ITEMS NUM_VBUCKETS VAL_SIZE [JOIN_URL] [EXTRA_SLEEP]\n")
+  print("runtest TEST_NAME PKG_RPM RAM_QUOTA REPLICA_COUNT" \
+        " NUM_ITEMS NUM_VBUCKETS VAL_SIZE CONCURRENCY [JOIN_URL] [key=val, ...]\n")
   exit(-1)
 end
 
@@ -26,7 +27,14 @@ $num_vbuckets  = ARGV[5].to_i
 $val_size      = ARGV[6] || "1000"
 $concurrency   = (ARGV[7] || "10").to_i
 $join_url      = ARGV[8]
-$extra_sleep   = ARGV[9]
+
+$opts = {}
+(ARGV[9] || "").split(',').each {|x|
+  key, val = x.split('=')
+  $opts[key] = val
+}
+
+$extra_sleep = $opts['extra_sleep']
 
 index = true
 index = false if $pkg_base == 'membase'
@@ -61,7 +69,7 @@ run "sudo ./after-install #{$num_vbuckets}"
 
 step("configuring...")
 
-if $join_url and $join_url.length > 0
+if $join_url and $join_url.length > 0 and $join_url != "none"
   sleep(3)
   my_ip = `/sbin/ifconfig eth0|grep inet|awk {'print $2'}|cut -d":" -f2|head -n 1`
   run "/opt/#{$pkg_base}/bin/membase server-add -c #{$join_url} \

@@ -179,7 +179,7 @@ end
 
 def prepare_cluster_existing(pkg_in, ram_quota, replica_count,
                              num_items, nodes, vbuckets, val_size, opts)
-  return nil if nodes <= 1
+  return "none" if nodes <= 1
 
   hosts = opts['cluster.hosts'].split('+')
   user  = opts['cluster.user']
@@ -287,12 +287,12 @@ ram_quotas_arr.each do |ram_quota|
             test_out = "#{test_dir}/#{test_file}.out"
             print "#{test_out} ...\n"
 
-            cluster_host_port = prepare_cluster(pkg, ram_quota, replica_count,
-                                                num_items, nodes, i, val_size, opts)
+            cluster = prepare_cluster(pkg, ram_quota, replica_count,
+                                      num_items, nodes, i, val_size, opts)
 
             run "./runtest-#{pkg_base} #{test_out} #{pkg}" \
                 " #{ram_quota} #{replica_count} #{num_items} #{i} #{val_size}" \
-                " 10 #{cluster_host_port} #{opts['extra_sleep']}"
+                " 10 #{cluster} #{opts['extra_sleep']}"
             sleep 1
 
             if opts['cluster.teardown'] == 'y'
