@@ -28,7 +28,6 @@ $concurrency   = (ARGV[7] || "10").to_i
 $join_url      = ARGV[8]
 $extra_sleep   = ARGV[9]
 
-
 index = true
 index = false if $pkg_base == 'membase'
 
