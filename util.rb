@@ -72,9 +72,12 @@ def proc_stats_start()
 end
 
 def proc_stats_end()
-  # Similar to killall...
-  #
-  x = `grep -l proc-stats /proc/*/cmdline`
-  x.split("\n").map {|c| `kill #{c.split('/')[2]}` }
+  killall('proc-stats')
 end
 
+def killall(pattern)
+  # A very dangerous function.
+  #
+  x = `grep -l #{pattern} /proc/*/cmdline`
+  x.split("\n").map {|c| `kill #{c.split('/')[2]}` }
+end

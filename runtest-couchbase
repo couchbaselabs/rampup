@@ -298,9 +298,46 @@ if $cli_kind[0] != 'couchdb'
 
   pids.map {|pid| [pid, Process.wait2(pid)] }
 
-  print pids
+  proc_stats_end()
+
+  # ------------------------------------
+
+  step("concurrent-usage-draining...")
+
+  wait_until_queue_drained()
+
+  # ------------------------------------
+
+  step("index-mutating...")
+
+  killall("rampup-client")
+
+  # Concurrently do some item mutations.
+  #
+  pid = fork do
+    run("./rampup-client #{$cli_kind[0]} 127.0.0.1:#{$cli_kind[1]}" \
+        " min_value_size=#{$val_size}" \
+        " ratio_sets=1.0" \
+        " ratio_creates=0.0" \
+        " num_items=#{$num_items}" \
+        " num_vbuckets=#{$num_vbuckets}" \
+        " max_ops=#{$num_items}")
+    exit
+  end
+
+  proc_stats_start()
+
+  run("./do-couch-view 127.0.0.1 #{num_views} last gte #{index_access} #{capture_response("index-mutating")} >> #{$out_file}")
 
   proc_stats_end()
+
+  killall("rampup-client")
+
+  # ------------------------------------
+
+  step("index-mutating-draining...")
+
+  wait_until_queue_drained()
 end
 
 # ------------------------------------
