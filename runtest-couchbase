@@ -310,6 +310,12 @@ step("stopping...",
 
 # ------------------------------------
 
+step("stopping-quiesce...")
+
+sleep 5
+
+# ------------------------------------
+
 step("restarting...",
      "sudo /etc/init.d/#{$pkg_base}-server start")
 
