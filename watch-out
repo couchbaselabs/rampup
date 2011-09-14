@@ -1,0 +1,3 @@
+#!/bin/sh
+
+watch -d "ls -alt out/test*/*"

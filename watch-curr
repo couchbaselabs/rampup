@@ -1,0 +1,3 @@
+#!/bin/sh
+
+watch -d "ls -at out/test*/*.out | head -n 1 | xargs tail -n 30"
