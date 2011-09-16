@@ -109,7 +109,7 @@ step("installing...")
 
 run "tar -xzvf #{$mongo_base}.tgz"
 
-$db_path = "#{$mongo_base}/data-#{$test_name}"
+$db_path = $du_path = "#{$mongo_base}/data-#{$test_name}"
 
 # ------------------------------------
 

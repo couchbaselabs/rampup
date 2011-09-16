@@ -39,6 +39,8 @@ $extra_sleep = $opts['extra_sleep']
 index = true
 index = false if $pkg_base == 'membase'
 
+$du_path = "/opt/#{$pkg_base}"
+
 # ------------------------------------
 
 step("preparing... #{$test_name}")

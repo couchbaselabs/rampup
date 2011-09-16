@@ -61,18 +61,17 @@ end
 
 def proc_stats_start()
   return unless $mesg_prev
-
   step = $mesg_prev.gsub(".", "").split(' ')[0]
-
   system("./proc-stats \"#{$top_patt}\" > #{$out_file}-#{step}.proc-stats &")
-
   dev = `mount | grep "on / "`.split(' ')[0].split('/')[2] # Example: "sdb1"
-
   system("./proc-stats #{dev} /proc/diskstats > #{$out_file}-#{step}.proc-diskstats &")
+  grab_du(step)
 end
 
 def proc_stats_end()
   killall('proc-stats')
+  step = $mesg_prev.gsub(".", "").split(' ')[0]
+  grab_du(step)
 end
 
 def killall(pattern)
@@ -81,3 +80,9 @@ def killall(pattern)
   x = `grep -l #{pattern} /proc/*/cmdline`
   x.split("\n").map {|c| `kill #{c.split('/')[2]}` }
 end
+
+def grab_du(step, du_path=nil)
+  du_path ||= $du_path
+  system("du -b -c --time #{du_path} > #{$out_file}-#{step}.du") if du_path
+end
+
