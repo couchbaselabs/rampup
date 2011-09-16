@@ -44,7 +44,7 @@ def process_file(db, upload, test, filename, run, build, ram_quota, replica_coun
 
     id, rev = db.save(doc)
 
-    for suffix in ["proc-stats", "proc-diskstats"]:
+    for suffix in ["proc-stats", "proc-diskstats", "du"]:
         for label in labels:
             x = filename + "-" + label + "." + suffix
             z = x + ".bz2"

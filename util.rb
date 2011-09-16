@@ -83,6 +83,6 @@ end
 
 def grab_du(step, du_path=nil)
   du_path ||= $du_path
-  system("du -b -c --time #{du_path} > #{$out_file}-#{step}.du") if du_path
+  system("du -b -c --time #{du_path} >> #{$out_file}-#{step}.du") if du_path
 end
 
