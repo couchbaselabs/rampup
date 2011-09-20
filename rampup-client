@@ -8,27 +8,36 @@ require 'uri'
 require './rampup-store'
 
 $cfg_defaults = {
-  :prefix => "",           # Prefix for every item key.
-  :max_ops => 0,           # Max number of requests (sets and gets) before exiting.
-  :max_creates => 10000,   # Total items to create.
-  :min_value_size => 10,   # Minimal value size in bytes during SET's.
-  :ratio_sets => 0.1,      # Fraction of requests that should be SET's.
-  :ratio_creates => 0.1,   # Fraction of SET's that should create new items.
-  :ratio_misses => 0.05,   # Fraction of GET's that should miss.
-  :ratio_hot => 0.2,       # Fraction of items to have as a hot item subset.
-  :ratio_hot_sets => 0.95, # Fraction of SET's that hit the hot item subset.
-  :ratio_hot_gets => 0.95, # Fraction of GET's that hit the hot item subset.
-  :bulk_load_batch => 1,   # When > 1, use batched bulk load optimization,
-                           # if appropriate, flushing after this many inserts.
+  :prefix => "",            # Prefix for every item key.
+  :max_ops => 0,            # Max number of requests (sets and gets) before exiting.
+  :max_items => 10000,      # Max number of items, if we ever create any.
+  :max_creates => 10000,    # Max number of creates.
+  :min_value_size => 10,    # Minimal value size in bytes during SET's.
+  :ratio_sets => 0.1,       # Fraction of requests that should be SET's.
+  :ratio_creates => 0.1,    # Fraction of SET's that should create new items;
+                            # the rest are updates.
+  :ratio_deletes => 0.0,    # Fraction of updates that should instead be DELETE's;
+                            # the rest are modifications. (TODO)
+  :ratio_advanced => 0.0,   # Fraction of modifications that should be fancy
+                            # mutation commands instead of a simple SET;
+                            # like append, prepend, etc. (TODO)
+  :ratio_misses => 0.05,    # Fraction of GET's that should miss.
+  :ratio_hot => 0.2,        # Fraction of items to have as a hot item subset.
+  :ratio_hot_sets => 0.95,  # Fraction of SET's that hit the hot item subset.
+  :ratio_hot_gets => 0.95,  # Fraction of GET's that hit the hot item subset.
+  :bulk_load_batch => 1,    # When > 1, use batched bulk load optimization,
+                            # if appropriate, flushing after this many inserts.
   :exit_after_creates => 0, # Exit after max_creates is reached.
   :num_vbuckets => 0
 }
 
 $cur_defaults = {
-  :num_items   => 0, # Number of items known to be in the bucket.
-  :num_sets    => 0,
-  :num_creates => 0, # Number of sets that were creates.
-  :num_gets    => 0
+  :num_items    => 0, # Number of items known to be in the bucket.
+  :num_sets     => 0,
+  :num_creates  => 0, # Number of sets that were creates.
+  :num_deletes  => 0, # Number of sets that were deletes.
+  :num_advanced => 0, # Number of sets that were advanced mutation commands.
+  :num_gets     => 0
 }
 
 if ARGV.length < 2
@@ -146,57 +155,70 @@ def run(cfg, cur, store)
   cmd_amt = cmd_end - cmd_beg
 end
 
+def positive(x)
+  return 1 if x <= 0
+  return x
+end
+
 def next_cmd(cfg, cur, store)
   # This function modifies cur.
   #
-  num_items = cur.num_items
-  num_gets  = cur.num_gets
-  num_sets  = cur.num_sets
+  num_ops = cur.num_gets + cur.num_sets
 
-  num_sets_pos = 1
-  num_sets_pos = num_sets if num_sets > 1
-
-  num_ops = num_gets + num_sets
-  num_ops_pos = 1
-  num_ops_pos = num_ops if num_ops > 1
-
-  do_set = cfg.ratio_sets > num_sets.to_f / num_ops_pos
+  do_set = cfg.ratio_sets > cur.num_sets.to_f / positive(num_ops)
   if do_set
-    # SET...
+    cmd = :set
     cur.num_sets += 1
 
-    do_set_create = (cfg.max_creates > num_items and
-                     cfg.ratio_creates > 0 and
-                     cfg.ratio_creates > num_items.to_f / num_sets_pos)
+    do_set_create = (cfg.max_items > cur.num_items and
+                     cfg.max_creates > cur.num_creates and
+                     cfg.ratio_creates > cur.num_creates.to_f / positive(cur.num_sets))
     if do_set_create
       # Create...
+      key_num = cur.num_items
+
       cur.num_items += 1
       cur.num_creates += 1
-      key_num = num_items
     else
       # Update...
-      key_num = choose_key_num(num_items, cfg.ratio_hot, cfg.ratio_hot_sets, num_sets)
+      key_num = choose_key_num(cur.num_items, cfg.ratio_hot, cfg.ratio_hot_sets, cur.num_sets)
+
+      num_updates = cur.num_sets - cur.num_creates
+
+      do_delete = cfg.ratio_deletes > cur.num_deletes.to_f / positive(num_updates)
+      if do_delete
+        cur.num_deletes += 1
+        cmd = :delete
+      else
+        num_mutations = num_updates - cur.num_deletes
+
+        do_advanced = cfg.ratio_advanced > cur.num_advanced.to_f / positive(num_mutations)
+        if do_advanced
+          cur.num_advanced += 1
+          cmd = :advanced
+        end
+      end
     end
 
     key_str = prepare_key(key_num, cfg.prefix)
     itm_val = store.gen_doc(key_num, key_str, cfg.min_value_size)
 
-    return :set, key_num, key_str, itm_val,
+    return cmd, key_num, key_str, itm_val,
            :success, nil
   else
-    # GET...
+    cmd = :get
     cur.num_gets += 1
 
-    do_get_hit = (cfg.ratio_misses * 100) < num_gets.modulo(100)
+    do_get_hit = (cfg.ratio_misses * 100) < cur.num_gets.modulo(100)
     if do_get_hit
-      key_num = choose_key_num(num_items, cfg.ratio_hot, cfg.ratio_hot_gets, num_gets)
+      key_num = choose_key_num(cur.num_items, cfg.ratio_hot, cfg.ratio_hot_gets, cur.num_gets)
       key_str = prepare_key(key_num, cfg.prefix)
       itm_val = store.gen_doc(key_num, key_str, cfg.min_value_size)
 
-      return :get, key_num, key_str, nil,
+      return cmd, key_num, key_str, nil,
              :success, itm_val
     else
-      return :get, -1, prepare_key(-1, cfg.prefix), nil,
+      return cmd, -1, prepare_key(-1, cfg.prefix), nil,
              :missing, "Not found"
     end
   end
@@ -213,8 +235,7 @@ def choose_key_num(num_items, ratio_hot, ratio_hot_choice, num_ops)
     base  = (ratio_hot * num_items).floor
     range = ((1.0 - ratio_hot) * num_items).floor
   end
-  range = 1 if range < 1
-  return base + num_ops.modulo(range)
+  return base + num_ops.modulo(positive(range))
 end
 
 def prepare_key(key_num, prefix)
