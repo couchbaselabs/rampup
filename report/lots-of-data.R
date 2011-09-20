@@ -9,7 +9,6 @@
 #
 #    Rscript --vanilla lots-of-data.R name-of-upload-shown-in-list
 #
-
 source("viewperf.R")
 require(ggplot2, quietly=TRUE)
 
@@ -75,11 +74,11 @@ if (length(uploadName) > 0) {
   df.nonrelative$comptime <- NA
   makeOne(df.nonrelative, paste(uploadName, '.non-relative.pdf', sep=''))
 
-  df.mbrelative <- buildComparison(df, 'build', 'membase−1.7.1.1')
-  makeOne(df.mbrelative, paste(uploadName, '.mb17-relative.pdf', sep=''))
+  df.mongo.relative <- buildComparison(df, 'build', 'mongodb-64-2.0.0-rc1')
+  makeOne(df.mongo.relative, paste(uploadName, '.mongo2.0.0rc1-relative.pdf', sep=''))
 
-  df.relative <- buildComparison(df, 'build', 'mongodb-64-2.0.0-rc1')
-  makeOne(df.relative, paste(uploadName, '.mongo-relative.pdf', sep=''))
+  df.membase.relative <- buildComparison(df, 'build', 'membase−1.7.1.1')
+  makeOne(df.membase.relative, paste(uploadName, '.membase1.7.1.1-relative.pdf', sep=''))
 } else {
   cat("Please choose an upload:\n\n * ")
   cat(listUploads(), sep="\n * ")
