@@ -10,8 +10,8 @@ require './rampup-store'
 $cfg_defaults = {
   :prefix => "",            # Prefix for every item key.
   :max_ops => 0,            # Max number of requests (sets and gets) before exiting.
-  :max_items => 10000,      # Max number of items, if we ever create any.
-  :max_creates => 10000,    # Max number of creates.
+  :max_items => -1,         # Max number of items, if we ever create any; default 10000.
+  :max_creates => -1,       # Max number of creates; defaults to max_items.
   :min_value_size => 10,    # Minimal value size in bytes during SET's.
   :ratio_sets => 0.1,       # Fraction of requests that should be SET's.
   :ratio_creates => 0.1,    # Fraction of SET's that should create new items;
@@ -84,6 +84,10 @@ cur = Cur.new
     end
   end
 end
+
+cfg.max_items = 10000 if cfg.max_items < 0 and cfg.max_creates < 0
+cfg.max_items = cfg.max_creates if cfg.max_items < 0
+cfg.max_creates = cfg.max_items if cfg.max_creates < 0
 
 if cfg.ratio_sets < 1.0 or
    cfg.ratio_creates < 1.0
