@@ -49,18 +49,20 @@ run "sudo killall -9 memcached || true"
 
 ['couchbase', 'membase'].each do |x|
   run "sudo /etc/init.d/#{x}-server stop || true"
-  run "sudo rpm -e #{x}-server || true"
-  run "sudo rm -rf /opt/#{x}/"
+  if $opts['install'] != 'n'
+      run "sudo rpm -e #{x}-server || true"
+      run "sudo rm -rf /opt/#{x}/"
+  end
 end
 
 # ------------------------------------
+  if $opts['install'] != 'n'
+     step("installing...")
+     run "sudo rpm -i #{$pkg}"
 
-step("installing...")
-
-run "sudo rpm -i #{$pkg}"
-
-sleep 5
-sleep $extra_sleep.to_i if $extra_sleep
+     sleep 5
+     sleep $extra_sleep.to_i if $extra_sleep
+   end
 
 run "rm -f after-install"
 run "wget https://raw.github.com/couchbaselabs/rampup/master/after-install"
