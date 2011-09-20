@@ -56,13 +56,15 @@ run "sudo killall -9 memcached || true"
 end
 
 # ------------------------------------
-  if $opts['install'] != 'n'
-     step("installing...")
-     run "sudo rpm -i #{$pkg}"
 
-     sleep 5
-     sleep $extra_sleep.to_i if $extra_sleep
-   end
+step("installing...")
+
+if $opts['install'] != 'n'
+  run "sudo rpm -i #{$pkg}"
+
+  sleep 5
+  sleep $extra_sleep.to_i if $extra_sleep
+end
 
 run "rm -f after-install"
 run "wget https://raw.github.com/couchbaselabs/rampup/master/after-install"
@@ -264,6 +266,12 @@ if index
   step("index-lastCount-accessing...",
        "./do-couch-view 127.0.0.1 #{num_views} lastCount gte #{index_access} #{capture_response("index-lastCount-accessing")} >> #{$out_file}",
        nil, num_views)
+
+  # ------------------------------------
+
+  if $cli_kind[0] == 'couchdb' and $num_vbuckets > 1
+
+  end
 
   # ------------------------------------
 
