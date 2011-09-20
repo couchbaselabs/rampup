@@ -270,7 +270,21 @@ if index
   # ------------------------------------
 
   if $cli_kind[0] == 'couchdb' and $num_vbuckets > 1
+    index_build_cmd, index_access = index_cmd("last")
 
+    step("disabling-partition...",
+         "curl -vX PUT http://127.0.0.1:5984/default/_design/rampup-last/_set_view/disable_partition/0")
+
+    step("disabled-partition-index-accessing...",
+         "./do-couch-view 127.0.0.1 #{num_views} last gte #{index_access} #{capture_response("index-accessing")} >> #{$out_file}",
+         nil, num_views)
+
+    step("enabling-partition...",
+         "curl -vX PUT http://127.0.0.1:5984/default/_design/rampup-last/_set_view/enable_partition/0")
+
+    step("enabled-partition-index-accessing...",
+         "./do-couch-view 127.0.0.1 #{num_views} last gte #{index_access} #{capture_response("index-accessing")} >> #{$out_file}",
+         nil, num_views)
   end
 
   # ------------------------------------
