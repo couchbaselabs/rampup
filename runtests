@@ -292,7 +292,7 @@ ram_quotas_arr.each do |ram_quota|
 
             run "./runtest-#{pkg_base} #{test_out} #{pkg}" \
                 " #{ram_quota} #{replica_count} #{num_items} #{i} #{val_size}" \
-                " 10 #{cluster} #{opts['extra_sleep']}"
+                " 10 #{cluster || 'none'} install=#{opts['install']}"
             sleep 1
 
             if opts['cluster.teardown'] == 'y'
