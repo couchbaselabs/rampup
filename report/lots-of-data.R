@@ -35,11 +35,12 @@ makeOne <- function(r, filename) {
   r$software_v <- paste(r$build, r$vbuckets)
   r$software_v <- factor(r$software_v, levels=unique(r$software_v), ordered=TRUE)
 
-  for(items in unique(r$items)) {
-    for(item_size in unique(r$size)) {
-      for(label in unique(r$label)) {
-        d <- r[r$items == items  & r$label == label & r$size == item_size,]
+  for(label in levels(r$label)) {
+    for(items in unique(r$items)) {
+      for(item_size in unique(r$size)) {
+        d <- r[r$items == items & r$label == label & r$size == item_size,]
         d$item_size <- d$size
+
         if (length(d[,1]) > 1) {
           cat("Doing", label, "over", comma(items), prettySize(item_size), "items\n")
           p <- ggplot(data=d, aes(software_v, time, fill=build)) +
@@ -69,9 +70,16 @@ uploadName <- commandArgs(TRUE)
 if (length(uploadName) > 0) {
   df <- getUpload(uploadName)
   df[df$nodes == 0,]$nodes <- 1
-  df.relative <- buildComparison(df, 'build', 'mongodb-64-2.0.0-rc1')
 
-  makeOne(df.relative, paste(uploadName, '.pdf', sep=''))
+  df.nonrelative <- df
+  df.nonrelative$comptime <- NA
+  makeOne(df.nonrelative, paste(uploadName, '.non-relative.pdf', sep=''))
+
+  df.mbrelative <- buildComparison(df, 'build', 'membase−1.7.1.1')
+  makeOne(df.mbrelative, paste(uploadName, '.mb17-relative.pdf', sep=''))
+
+  df.relative <- buildComparison(df, 'build', 'mongodb-64-2.0.0-rc1')
+  makeOne(df.relative, paste(uploadName, '.mongo-relative.pdf', sep=''))
 } else {
   cat("Please choose an upload:\n\n * ")
   cat(listUploads(), sep="\n * ")
