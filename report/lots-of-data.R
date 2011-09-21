@@ -79,7 +79,7 @@ if (length(uploadName) > 0) {
   df.mongo.relative <- buildComparison(df, 'build', 'mongodb-64-2.0.0-rc1')
   makeOne(df.mongo.relative, paste(uploadName, '.mongo2.0.0rc1-relative.pdf', sep=''))
 
-  df.membase.relative <- buildComparison(df, 'build', 'membase−1.7.1.1')
+  df.membase.relative <- buildComparison(df, 'build', 'membase-1.7.1.1')
   makeOne(df.membase.relative, paste(uploadName, '.membase1.7.1.1-relative.pdf', sep=''))
 } else {
   cat("Please choose an upload:\n\n * ")
