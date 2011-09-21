@@ -11,6 +11,7 @@
 #
 source("viewperf.R")
 require(ggplot2, quietly=TRUE)
+require(multicore, quietly=TRUE)
 
 prettySize <- function(s, fmt="%.2f") {
   sizes <- c('B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB')
@@ -72,15 +73,12 @@ if (length(uploadName) > 0) {
     df[df$nodes == 0,]$nodes <- 1
   }
 
-  df.nonrelative <- df
-  df.nonrelative$comptime <- NA
-  makeOne(df.nonrelative, paste(uploadName, '.non-relative.pdf', sep=''))
+  comparisions <- c('mongodb-64-2.0.0-rc1', 'membase-1.7.1.1')
 
-  df.mongo.relative <- buildComparison(df, 'build', 'mongodb-64-2.0.0-rc1')
-  makeOne(df.mongo.relative, paste(uploadName, '.mongo2.0.0rc1-relative.pdf', sep=''))
-
-  df.membase.relative <- buildComparison(df, 'build', 'membase-1.7.1.1')
-  makeOne(df.membase.relative, paste(uploadName, '.membase1.7.1.1-relative.pdf', sep=''))
+  mclapply(comparisions,
+           function(relto)
+             makeOne(buildComparison(df, 'build', relto),
+                     paste(uploadName, relto, 'rel.pdf', sep='.')))
 } else {
   cat("Please choose an upload:\n\n * ")
   cat(listUploads(), sep="\n * ")
