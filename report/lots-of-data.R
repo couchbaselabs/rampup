@@ -68,7 +68,9 @@ uploadName <- commandArgs(TRUE)
 
 if (length(uploadName) > 0) {
   df <- getUpload(uploadName)
-  df[df$nodes == 0,]$nodes <- 1
+  if (nrow(df[df$nodes == 0,]) > 0) {
+    df[df$nodes == 0,]$nodes <- 1
+  }
 
   df.nonrelative <- df
   df.nonrelative$comptime <- NA
