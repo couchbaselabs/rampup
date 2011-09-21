@@ -46,7 +46,9 @@ makeOne <- function(r, filename) {
           p <- ggplot(data=d, aes(software_v, time, fill=build)) +
             geom_bar(stat='identity', position='dodge') + coord_flip() +
             opts(legend.position = "none") +
-            opts(title=paste(comma(items), " items -", label)) +
+            opts(title=paste(comma(items),
+                             prettySize(item_size, "%d"),
+                             "items -", label)) +
             facet_wrap(~nodes, ncol=1, scales='free') +
             labs(y='Seconds', x='')
 
