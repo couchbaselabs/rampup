@@ -1,0 +1,4 @@
+{ "_id": "step_loading-docs",
+  "kind": "step",
+  "description": "Sequentially load all documents.  The load pathway is via either moxi, mongos, or REST (for couchbase-single), depending on the target server. REST-based loading will use bulk-docs."
+}

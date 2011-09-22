@@ -1,0 +1,4 @@
+{ "_id": "step_done",
+  "kind": "step",
+  "description": "Stop the server and kill processes."
+}

@@ -1,0 +1,4 @@
+{ "_id": "step_enabling-partition",
+  "kind": "step",
+  "description": "Re-enable partition 0 so that all partitions are active."
+}

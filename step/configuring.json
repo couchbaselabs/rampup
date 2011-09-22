@@ -1,0 +1,4 @@
+{ "_id": "step_configuring",
+  "kind": "step",
+  "description": "Create the default bucket with the target RAM quota. And, potentially join to cluster for multi-node tests. Also, create first design doc for the 'last' (high-fan-out) index."
+}

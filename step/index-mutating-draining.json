@@ -1,0 +1,4 @@
+{ "_id": "step_index-mutating-draining",
+  "kind": "step",
+  "description": "Right after the index-mutating step, wait until persistence queues have drained."
+}

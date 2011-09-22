@@ -1,0 +1,4 @@
+{ "_id": "step_bucket-create",
+  "kind": "step",
+  "description": "After the default bucket was deleted, create it again with the same config, so it should be an empty bucket."
+}

@@ -1,0 +1,4 @@
+{ "_id": "step_index-mid-design",
+  "kind": "step",
+  "description": "Define another index via a new design document: the 'mid' (low-fan-out) index is like a secondary index on user's email address. This 'mid' index has no reduce function."
+}

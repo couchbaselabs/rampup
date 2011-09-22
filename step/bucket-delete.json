@@ -1,0 +1,4 @@
+{ "_id": "step_bucket-delete",
+  "kind": "step",
+  "description": "Delete the default bucket."
+}

@@ -1,0 +1,4 @@
+{ "_id": "step_index-lastCount-building",
+  "kind": "step",
+  "description": "Build the 'lastCount' index."
+}

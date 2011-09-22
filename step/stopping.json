@@ -1,0 +1,4 @@
+{ "_id": "step_stopping",
+  "kind": "step",
+  "description": "Stop the server."
+}

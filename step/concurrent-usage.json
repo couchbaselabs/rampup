@@ -1,0 +1,4 @@
+{ "_id": "step_concurrent-usage",
+  "kind": "step",
+  "description": "Start #{$concurrency} concurrent number of clients, each which perform 10000 ops. 10% of the ops will be sets. 90% of the ops will be gets. 95% of the sets will hit a hot item subset. 95% of the gets will hit a hot item subset. The hot item subset is 20% of all the items."
+}

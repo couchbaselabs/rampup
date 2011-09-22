@@ -1,0 +1,4 @@
+{ "_id": "step_index-eq-accessing2",
+  "kind": "step",
+  "description": "Access the last (high-fan-out) index 10,000 times, sequentially, via a equal-to query, limit 10 results per query, but do it again a second time to see if system caching has an effect."
+}

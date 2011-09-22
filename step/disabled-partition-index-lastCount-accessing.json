@@ -1,0 +1,4 @@
+{ "_id": "step_disabled-partition-index-lastCount-accessing",
+  "kind": "step",
+  "description": "While partition 0 disabled, access the view 10,000 times, sequentially, via a greater-than-or-equal query, limit 10 results per query."
+}

@@ -1,0 +1,4 @@
+{ "_id": "step_disabling-partition",
+  "kind": "step",
+  "description": "Disable partition 0 to simulate a moved vbucket."
+}

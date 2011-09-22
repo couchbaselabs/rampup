@@ -1,0 +1,4 @@
+{ "_id": "step_installing",
+  "kind": "step",
+  "description": "Install software, and run the after-install hacks to override default vbucket config, default nodelay, allow erlang functions, increase os_process_limits, etc. See: https://github.com/couchbaselabs/rampup/blob/master/after-install"
+}

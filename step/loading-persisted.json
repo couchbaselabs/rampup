@@ -1,0 +1,4 @@
+{ "_id": "step_loading-persisted",
+  "kind": "step",
+  "description": "Right after the loading-docs step, measure the time for the persistence queue to drain, by watching ep_queue_size / ep_flusher_todo."
+}

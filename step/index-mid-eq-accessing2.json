@@ -1,0 +1,4 @@
+{ "_id": "step_index-mid-eq-accessing2",
+  "kind": "step",
+  "description": "Access the mid (low-fan-out) index 10,000 times, sequentially, via a equal-to query, limit 10 results per query, a second time."
+}

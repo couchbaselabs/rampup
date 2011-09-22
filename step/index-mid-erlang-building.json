@@ -1,0 +1,4 @@
+{ "_id": "step_index-mid-erlang-building",
+  "kind": "step",
+  "description": "Build the 'mid-erlang' index."
+}

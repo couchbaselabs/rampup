@@ -1,0 +1,4 @@
+{ "_id": "step_index-building",
+  "kind": "step",
+  "description": "First index build, of the last (high-fan-out) index. The high-fan-out index is like an index on a user's country. The 'last' index has no reduce function."
+}

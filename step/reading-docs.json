@@ -1,0 +1,4 @@
+{ "_id": "step_reading-docs",
+  "kind": "step",
+  "description": "Sequentially read 10,000 documents."
+}

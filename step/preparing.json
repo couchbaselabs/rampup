@@ -1,0 +1,4 @@
+{ "_id": "step_preparing",
+  "kind": "step",
+  "description": "Cleanup from previous runs."
+}

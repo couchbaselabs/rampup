@@ -1,0 +1,4 @@
+{ "_id": "step_index-mid-erlang-design",
+  "kind": "step",
+  "description": "Define another index via a new design document, similar to the 'mid' index, but the 'mid-erlang' index has a map function written in erlang instead of javascript."
+}

@@ -1,0 +1,4 @@
+{ "_id": "step_index-rebuilding",
+  "kind": "step",
+  "description": "Measure the _compact time on the 'last' (high-fan-out) design document."
+}

@@ -1,0 +1,4 @@
+{ "_id": "step_index-lastCount-design",
+  "kind": "step",
+  "description": "Define another index via a new design document: the 'lastCount' (high-fan-out) index is like a the 'last' index but also includes a _count reducer."
+}

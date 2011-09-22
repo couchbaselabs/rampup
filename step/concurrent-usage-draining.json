@@ -1,0 +1,4 @@
+{ "_id": "step_concurrent-usage-draining",
+  "kind": "step",
+  "description": "Right after the concurrent-usage step, wait until the persistence queues have drained to zero."
+}

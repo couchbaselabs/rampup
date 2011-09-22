@@ -1,0 +1,4 @@
+{ "_id": "step_stopping-quiesce",
+  "kind": "step",
+  "description": "After stopping the server, sleep 5 seconds."
+}

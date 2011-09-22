@@ -1,0 +1,4 @@
+{ "_id": "step_clogging",
+  "kind": "step",
+  "description": "After the bucket was re-created (and is now an empty bucket), turn off persistence draining (via mbflushctl stop).  Then sequentially load 100,000 number of items so the server queues get clogged up with mutations."
+}

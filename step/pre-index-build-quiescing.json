@@ -1,0 +1,4 @@
+{ "_id": "step_pre-index-build-quiescing",
+  "kind": "step",
+  "description": "Before doing the first index build step, let everything quiesce by sleeping 5 seconds.  We shouldn't need this, but some dev build of couchbase 2.0.0r needed it."
+}
