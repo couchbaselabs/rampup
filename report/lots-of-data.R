@@ -76,7 +76,7 @@ makeOne <- function(r, filename) {
           print(p)
           makeFootnote(d[1,'description'])
         } else {
-          cat("Skipping", comma(items), label, "\n")
+          cat("Skipping", comma(items), prettySize(item_size, "%d"), label, "\n")
         }
       }
     }
