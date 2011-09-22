@@ -245,7 +245,7 @@ EOD
        "./do-couch-view 127.0.0.1 #{num_views} last gte #{index_access} #{capture_response("index-accessing")} >> #{$out_file}",
        nil, num_views,
        <<-'EOD')
-Access the last (high-fan-out) index #{num_views} times, sequentially,
+Access the last (high-fan-out) index 10,000 times, sequentially,
 via a greater-than-or-equal query, limit 10 results per query.
 Against couch, that means a startkey but no endkey.
 EOD
@@ -254,7 +254,7 @@ EOD
        "./do-couch-view 127.0.0.1 #{num_views} last gte #{index_access} #{capture_response("index-accessing2")} >> #{$out_file}",
        nil, num_views,
        <<-'EOD')
-Access the last (high-fan-out) index #{num_views} times, sequentially,
+Access the last (high-fan-out) index 10,000 times, sequentially,
 via a greater-than-or-equal query, limit 10 results per query, but do it again
 a second time to see if system caching has an effect.
 EOD
@@ -263,7 +263,7 @@ EOD
        "./do-couch-view 127.0.0.1 #{num_views} last eq #{index_access} #{capture_response("index-eq-accessing")} >> #{$out_file}",
        nil, num_views,
        <<-'EOD')
-Access the last (high-fan-out) index #{num_views} times, sequentially,
+Access the last (high-fan-out) index 10,000 times, sequentially,
 via a equal-to query, limit 10 results per query.  Against couch,
 that means a startkey is the same as the endkey.
 EOD
@@ -272,7 +272,7 @@ EOD
        "./do-couch-view 127.0.0.1 #{num_views} last eq #{index_access} #{capture_response("index-eq-accessing2")} >> #{$out_file}",
        nil, num_views,
        <<-'EOD')
-Access the last (high-fan-out) index #{num_views} times, sequentially,
+Access the last (high-fan-out) index 10,000 times, sequentially,
 via a equal-to query, limit 10 results per query, but do it again
 a second time to see if system caching has an effect.
 EOD
@@ -305,7 +305,7 @@ EOD
        "./do-couch-view 127.0.0.1 #{num_views} mid gte #{index_access} #{capture_response("index-mid-accessing")} >> #{$out_file}",
        nil, num_views,
        <<-'EOD')
-Access the mid (low-fan-out) index #{num_views} times, sequentially,
+Access the mid (low-fan-out) index 10,000 times, sequentially,
 via a greater-than-or-equal query, limit 10 results per query.
 Against couch, that means a startkey but no endkey.
 EOD
@@ -314,7 +314,7 @@ EOD
        "./do-couch-view 127.0.0.1 #{num_views} mid gte #{index_access} #{capture_response("index-mid-accessing2")} >> #{$out_file}",
        nil, num_views,
        <<-'EOD')
-Access the mid (low-fan-out) index #{num_views} times, sequentially,
+Access the mid (low-fan-out) index 10,000 times, sequentially,
 via a greater-than-or-equal query, limit 10 results per query,
 a second time to see if system caching has an effect.
 EOD
@@ -323,7 +323,7 @@ EOD
        "./do-couch-view 127.0.0.1 #{num_views} mid eq #{index_access} #{capture_response("index-mid-eq-accessing")} >> #{$out_file}",
        nil, num_views,
        <<-'EOD')
-Access the mid (low-fan-out) index #{num_views} times, sequentially,
+Access the mid (low-fan-out) index 10,000 times, sequentially,
 via a equal-to query, limit 10 results per query.
 Against couch, that means a startkey but no endkey.
 EOD
@@ -332,7 +332,7 @@ EOD
        "./do-couch-view 127.0.0.1 #{num_views} mid eq #{index_access} #{capture_response("index-mid-eq-accessing2")} >> #{$out_file}",
        nil, num_views,
        <<-'EOD')
-Access the mid (low-fan-out) index #{num_views} times, sequentially,
+Access the mid (low-fan-out) index 10,000 times, sequentially,
 via a equal-to query, limit 10 results per query,
 a second time.
 EOD
@@ -366,7 +366,7 @@ EOD
        "./do-couch-view 127.0.0.1 #{num_views} lastCount gte #{index_access} #{capture_response("index-lastCount-accessing")} >> #{$out_file}",
        nil, num_views,
        <<-'EOD')
-Access the lastCount index #{num_views} times, sequentially,
+Access the lastCount index 10,000 times, sequentially,
 via a greater-than-or-equal query, limit 10 results per query.
 Against couch, that means a startkey but no endkey.
 EOD
@@ -387,7 +387,7 @@ EOD
            "./do-couch-view 127.0.0.1 #{num_views} last gte #{index_access} #{capture_response("disabled-partition-#{view}-accessing")} >> #{$out_file}",
            nil, num_views,
        <<-'EOD')
-While partition 0 is disabled, access the #{last} view #{num_views} times, sequentially,
+While partition 0 disabled, access the view 10,000 times, sequentially,
 via a greater-than-or-equal query, limit 10 results per query.
 EOD
     end
@@ -405,7 +405,7 @@ EOD
            "./do-couch-view 127.0.0.1 #{num_views} last gte #{index_access} #{capture_response("enabled-partition-#{view}-accessing")} >> #{$out_file}",
            nil, num_views,
            <<-'EOD')
-With partition 0 is re-enabled, access the #{last} view #{num_views} times, sequentially,
+With partition 0 re-enabled, access the view 10,000 times, sequentially,
 via a greater-than-or-equal query, limit 10 results per query.
 EOD
     end
@@ -495,9 +495,10 @@ EOD
        <<-'EOD')
 Start one client, which starts to sequentially mutate all items once;
 against couchbase, that's just blind sets.  Concurrently,
-sequentially query the 'last' (high-fan-out) index #{$num_items} times,
+sequentially query the 'last' (high-fan-out) index 10,000 times,
 using a greater-than-or-equal query, limit 10 rows per query
-and measure until the view access is done.
+and stop this step (the concurrent mutations) when all 10,000
+sequential view accesses are done.
 EOD
 
   killall("rampup-client")
@@ -656,7 +657,8 @@ EOD
        <<-'EOD')
 After the bucket was re-created (and is now an empty bucket), turn off
 persistence draining (via mbflushctl stop).  Then sequentially
-load #{clog_num_items} number of items.
+load 100,000 number of items so the server queues get clogged up
+with mutations.
 EOD
 
   proc_stats_start()
