@@ -24,7 +24,20 @@ $mesg_prev = nil
 $work_prev = nil
 $step_num  = 0
 
-def step(mesg, cmd=nil, elapsed=nil, work=nil)
+def step(mesg, cmd=nil, elapsed=nil, work=nil, description=nil)
+  if description
+    `mkdir -p ./step`
+    step_name = mesg.gsub('.', '')
+    step_desc = "./step/#{step_name}.json"
+    step_doc = <<EOS
+{ "_id": "step_#{step_name}",
+  "kind": "step",
+  "description": "#{description.gsub("\n", ' ').strip}"
+}
+EOS
+    File.open(step_desc, 'w') {|f| f.write(step_doc) }
+  end
+
   $time_curr = Time.now
 
   if $time_prev

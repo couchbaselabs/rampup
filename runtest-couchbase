@@ -43,7 +43,9 @@ $du_path = "/opt/#{$pkg_base}/var"
 
 # ------------------------------------
 
-step("preparing... #{$test_name}")
+step("preparing... #{$test_name}",
+     nil, nil, nil,
+     "Cleanup from previous runs.")
 
 run "sudo killall -9 memcached || true"
 
@@ -57,7 +59,14 @@ end
 
 # ------------------------------------
 
-step("installing...")
+step("installing...",
+     nil, nil, nil,
+     <<-'EOD')
+Install software, and run the after-install hacks
+to override default vbucket config, default nodelay,
+allow erlang functions, increase os_process_limits, etc.
+See: https://github.com/couchbaselabs/rampup/blob/master/after-install
+EOD
 
 if $opts['install'] != 'n'
   run "sudo rpm -i #{$pkg}"
@@ -73,7 +82,13 @@ run "sudo ./after-install #{$num_vbuckets}"
 
 # ------------------------------------
 
-step("configuring...")
+step("configuring...",
+     nil, nil, nil,
+     <<-'EOD')
+Create the default bucket with the target RAM quota.
+And, potentially join to cluster for multi-node tests.
+Also, create first design doc for the 'last' (high-fan-out) index.
+EOD
 
 if $join_url and $join_url.length > 0 and $join_url != "none"
   sleep(3)
@@ -130,11 +145,21 @@ step("loading-docs...",
      " max_creates=#{$num_items} exit_after_creates=1" \
      " num_vbuckets=#{$num_vbuckets}" \
      " bulk_load_batch=#{bulk_load_batch}",
-     nil, $num_items)
+     nil, $num_items,
+     <<-'EOD')
+Sequentially load all documents.  The load pathway is via either moxi,
+mongos, or REST (for couchbase-single), depending on the target server.
+REST-based loading will use bulk-docs.
+EOD
 
 # ------------------------------------
 
-step("loading-persisted...")
+step("loading-persisted...",
+     nil, nil, nil,
+     <<-'EOD')
+Right after the loading-docs step, measure the time for
+the persistence queue to drain, by watching ep_queue_size / ep_flusher_todo.
+EOD
 
 def wait_until_queue_drained()
   i = 0
@@ -162,7 +187,10 @@ step("reading-docs...",
      " num_items=#{$num_items}" \
      " num_vbuckets=#{$num_vbuckets}" \
      " max_ops=10000",
-     nil, 10000)
+     nil, 10000,
+     <<-'EOD')
+Sequentially read 10,000 documents.
+EOD
 
 # ------------------------------------
 
@@ -173,7 +201,13 @@ end
 if index
   num_views = 10000
 
-  step("pre-index-build-quiescing...")
+  step("pre-index-build-quiescing...",
+       nil, nil, nil,
+       <<-'EOD')
+Before doing the first index build step, let everything quiesce
+by sleeping 5 seconds.  We shouldn't need this, but some
+dev build of couchbase 2.0.0r needed it.
+EOD
   sleep 5
 
   # ------------------------------------
@@ -195,7 +229,13 @@ if index
   index_build_cmd, index_access = index_cmd("last")
 
   step("index-building...",
-       index_build_cmd)
+       index_build_cmd,
+       nil, nil,
+       <<-'EOD')
+First index build, of the last (high-fan-out) index.
+The high-fan-out index is like an index on a user's country.
+The 'last' index has no reduce function.
+EOD
 
   print("index_build_cmd: #{index_build_cmd}\n")
 
@@ -203,23 +243,49 @@ if index
 
   step("index-accessing...",
        "./do-couch-view 127.0.0.1 #{num_views} last gte #{index_access} #{capture_response("index-accessing")} >> #{$out_file}",
-       nil, num_views)
+       nil, num_views,
+       <<-'EOD')
+Access the last (high-fan-out) index #{num_views} times, sequentially,
+via a greater-than-or-equal query, limit 10 results per query.
+Against couch, that means a startkey but no endkey.
+EOD
 
   step("index-accessing2...",
        "./do-couch-view 127.0.0.1 #{num_views} last gte #{index_access} #{capture_response("index-accessing2")} >> #{$out_file}",
-       nil, num_views)
+       nil, num_views,
+       <<-'EOD')
+Access the last (high-fan-out) index #{num_views} times, sequentially,
+via a greater-than-or-equal query, limit 10 results per query, but do it again
+a second time to see if system caching has an effect.
+EOD
 
   step("index-eq-accessing...",
        "./do-couch-view 127.0.0.1 #{num_views} last eq #{index_access} #{capture_response("index-eq-accessing")} >> #{$out_file}",
-       nil, num_views)
+       nil, num_views,
+       <<-'EOD')
+Access the last (high-fan-out) index #{num_views} times, sequentially,
+via a equal-to query, limit 10 results per query.  Against couch,
+that means a startkey is the same as the endkey.
+EOD
 
   step("index-eq-accessing2...",
        "./do-couch-view 127.0.0.1 #{num_views} last eq #{index_access} #{capture_response("index-eq-accessing2")} >> #{$out_file}",
-       nil, num_views)
+       nil, num_views,
+       <<-'EOD')
+Access the last (high-fan-out) index #{num_views} times, sequentially,
+via a equal-to query, limit 10 results per query, but do it again
+a second time to see if system caching has an effect.
+EOD
 
   # ------------------------------------
 
-  step("index-mid-design...")
+  step("index-mid-design...",
+       nil, nil, nil,
+       <<-'EOD')
+Define another index via a new design document:
+the 'mid' (low-fan-out) index is like a secondary index on
+user's email address. This 'mid' index has no reduce function.
+EOD
 
   load_design_doc('mid')
 
@@ -228,29 +294,58 @@ if index
   index_build_cmd, index_access = index_cmd("mid")
 
   step("index-mid-building...",
-       index_build_cmd)
+       index_build_cmd,
+       <<-'EOD')
+Build the 'mid' index.
+EOD
 
   # ------------------------------------
 
   step("index-mid-accessing...",
        "./do-couch-view 127.0.0.1 #{num_views} mid gte #{index_access} #{capture_response("index-mid-accessing")} >> #{$out_file}",
-       nil, num_views)
+       nil, num_views,
+       <<-'EOD')
+Access the mid (low-fan-out) index #{num_views} times, sequentially,
+via a greater-than-or-equal query, limit 10 results per query.
+Against couch, that means a startkey but no endkey.
+EOD
 
   step("index-mid-accessing2...",
        "./do-couch-view 127.0.0.1 #{num_views} mid gte #{index_access} #{capture_response("index-mid-accessing2")} >> #{$out_file}",
-       nil, num_views)
+       nil, num_views,
+       <<-'EOD')
+Access the mid (low-fan-out) index #{num_views} times, sequentially,
+via a greater-than-or-equal query, limit 10 results per query,
+a second time to see if system caching has an effect.
+EOD
 
   step("index-mid-eq-accessing...",
        "./do-couch-view 127.0.0.1 #{num_views} mid eq #{index_access} #{capture_response("index-mid-eq-accessing")} >> #{$out_file}",
-       nil, num_views)
+       nil, num_views,
+       <<-'EOD')
+Access the mid (low-fan-out) index #{num_views} times, sequentially,
+via a equal-to query, limit 10 results per query.
+Against couch, that means a startkey but no endkey.
+EOD
 
   step("index-mid-eq-accessing2...",
        "./do-couch-view 127.0.0.1 #{num_views} mid eq #{index_access} #{capture_response("index-mid-eq-accessing2")} >> #{$out_file}",
-       nil, num_views)
+       nil, num_views,
+       <<-'EOD')
+Access the mid (low-fan-out) index #{num_views} times, sequentially,
+via a equal-to query, limit 10 results per query,
+a second time.
+EOD
 
   # ------------------------------------
 
-  step("index-lastCount-design...")
+  step("index-lastCount-design...",
+       nil, nil, nil,
+       <<-'EOD')
+Define another index via a new design document:
+the 'lastCount' (high-fan-out) index is like a the 'last' index
+but also includes a _count reducer.
+EOD
 
   load_design_doc('lastCount')
 
@@ -259,41 +354,72 @@ if index
   index_build_cmd, index_access = index_cmd("lastCount")
 
   step("index-lastCount-building...",
-       index_build_cmd)
+       index_build_cmd,
+       nil, nil,
+       <<-'EOD')
+Build the 'lastCount' index.
+EOD
 
   # ------------------------------------
 
   step("index-lastCount-accessing...",
        "./do-couch-view 127.0.0.1 #{num_views} lastCount gte #{index_access} #{capture_response("index-lastCount-accessing")} >> #{$out_file}",
-       nil, num_views)
+       nil, num_views,
+       <<-'EOD')
+Access the lastCount index #{num_views} times, sequentially,
+via a greater-than-or-equal query, limit 10 results per query.
+Against couch, that means a startkey but no endkey.
+EOD
 
   # ------------------------------------
 
   if $cli_kind[0] == 'couchdb' and $num_vbuckets > 1
     step("disabling-partition...",
-         "curl -vX PUT http://127.0.0.1:5984/default/_design/rampup-last/_set_view/disable_partition/0")
+         "curl -vX PUT http://127.0.0.1:5984/default/_design/rampup-last/_set_view/disable_partition/0",
+         nil, nil,
+         <<-'EOD')
+Disable partition 0 to simulate a moved vbucket.
+EOD
 
     ["last", "lastCount"].each do |view|
       index_build_cmd, index_access = index_cmd(view)
       step("disabled-partition-index-#{view}-accessing...",
            "./do-couch-view 127.0.0.1 #{num_views} last gte #{index_access} #{capture_response("disabled-partition-#{view}-accessing")} >> #{$out_file}",
-           nil, num_views)
+           nil, num_views,
+       <<-'EOD')
+While partition 0 is disabled, access the #{last} view #{num_views} times, sequentially,
+via a greater-than-or-equal query, limit 10 results per query.
+EOD
     end
 
     step("enabling-partition...",
-         "curl -vX PUT http://127.0.0.1:5984/default/_design/rampup-last/_set_view/enable_partition/0")
+         "curl -vX PUT http://127.0.0.1:5984/default/_design/rampup-last/_set_view/enable_partition/0",
+         nil, nil,
+         <<-'EOD')
+Re-enable partition 0 so that all partitions are active.
+EOD
 
     ["last", "lastCount"].each do |view|
       index_build_cmd, index_access = index_cmd(view)
       step("enabled-partition-index-#{view}-accessing...",
            "./do-couch-view 127.0.0.1 #{num_views} last gte #{index_access} #{capture_response("enabled-partition-#{view}-accessing")} >> #{$out_file}",
-           nil, num_views)
+           nil, num_views,
+           <<-'EOD')
+With partition 0 is re-enabled, access the #{last} view #{num_views} times, sequentially,
+via a greater-than-or-equal query, limit 10 results per query.
+EOD
     end
   end
 
   # ------------------------------------
 
-  step("index-mid-erlang-design...")
+  step("index-mid-erlang-design...",
+       nil, nil, nil,
+       <<-'EOD')
+Define another index via a new design document,
+similar to the 'mid' index, but the 'mid-erlang' index
+has a map function written in erlang instead of javascript.
+EOD
 
   load_design_doc('mid-erlang')
 
@@ -302,7 +428,11 @@ if index
   index_build_cmd, index_access = index_cmd("mid-erlang")
 
   step("index-mid-erlang-building...",
-       index_build_cmd)
+       index_build_cmd,
+       nil, nil,
+       <<-'EOD')
+Build the 'mid-erlang' index.
+EOD
 end
 
 # ------------------------------------
@@ -311,7 +441,16 @@ if $cli_kind[0] != 'couchdb'
   ops_per_concurrent_client = 10000
 
   step("concurrent-usage...",
-       nil, nil, $concurrency * ops_per_concurrent_client)
+       nil, nil, $concurrency * ops_per_concurrent_client,
+       <<-'EOD')
+Start #{$concurrency} concurrent number of clients, each which perform
+10000 ops.
+10% of the ops will be sets.
+90% of the ops will be gets.
+95% of the sets will hit a hot item subset.
+95% of the gets will hit a hot item subset.
+The hot item subset is 20% of all the items.
+EOD
 
   proc_stats_start()
 
@@ -320,6 +459,12 @@ if $cli_kind[0] != 'couchdb'
       run("./rampup-client #{$cli_kind[0]} 127.0.0.1:#{$cli_kind[1]}" \
           " min_value_size=#{$val_size}" \
           " num_items=#{$num_items}" \
+          " ratio_sets=0.1" \
+          " ratio_creates=0.0" \
+          " ratio_misses=0.05" \
+          " ratio_hot=0.2" \
+          " ratio_hot_sets=0.2" \
+          " ratio_hot_gets=0.2" \
           " num_vbuckets=#{$num_vbuckets}" \
           " max_ops=#{ops_per_concurrent_client}")
       exit
@@ -330,15 +475,30 @@ if $cli_kind[0] != 'couchdb'
 
   proc_stats_end()
 
+  killall("rampup-client")
+
   # ------------------------------------
 
-  step("concurrent-usage-draining...")
+  step("concurrent-usage-draining...",
+       nil, nil, nil,
+       <<-'EOD')
+Right after the concurrent-usage step, wait until the
+persistence queues have drained to zero.
+EOD
 
   wait_until_queue_drained()
 
   # ------------------------------------
 
-  step("index-mutating...")
+  step("index-mutating...",
+       nil, nil, nil,
+       <<-'EOD')
+Start one client, which starts to sequentially mutate all items once;
+against couchbase, that's just blind sets.  Concurrently,
+sequentially query the 'last' (high-fan-out) index #{$num_items} times,
+using a greater-than-or-equal query, limit 10 rows per query
+and measure until the view access is done.
+EOD
 
   killall("rampup-client")
 
@@ -365,7 +525,12 @@ if $cli_kind[0] != 'couchdb'
 
   # ------------------------------------
 
-  step("index-mutating-draining...")
+  step("index-mutating-draining...",
+       nil, nil, nil,
+       <<-'EOD')
+Right after the index-mutating step,
+wait until persistence queues have drained.
+EOD
 
   wait_until_queue_drained()
 end
@@ -373,22 +538,38 @@ end
 # ------------------------------------
 
 step("stopping...",
-     "sudo /etc/init.d/#{$pkg_base}-server stop")
+     "sudo /etc/init.d/#{$pkg_base}-server stop",
+     nil, nil,
+     <<-'EOD')
+Stop the server.
+EOD
 
 # ------------------------------------
 
-step("stopping-quiesce...")
+step("stopping-quiesce...",
+     nil, nil, nil,
+     <<-'EOD')
+After stopping the server, sleep 5 seconds.
+EOD
 
 sleep 5
 
 # ------------------------------------
 
 step("restarting...",
-     "sudo /etc/init.d/#{$pkg_base}-server start")
+     "sudo /etc/init.d/#{$pkg_base}-server start",
+     nil, nil,
+     <<-'EOD')
+Restart the server.
+EOD
 
 # ------------------------------------
 
-step("warming...")
+step("warming...",
+     nil, nil, nil,
+     <<-'EOD')
+Measure the warmup time after the restart step, via ep_warmup_time.
+EOD
 
 w = 0
 
@@ -413,7 +594,11 @@ end
 # ------------------------------------
 
 if index and not ($cli_kind[0] == 'couchdb' and $num_vbuckets > 1)
-  step("index-rebuilding...", nil, w)
+  step("index-rebuilding...",
+       nil, w, nil,
+       <<-'EOD')
+Measure the _compact time on the 'last' (high-fan-out) design document.
+EOD
 
   run('curl -H "Content-Type: application/json"' +
       ' -X POST http://localhost:5984/default/_compact/rampup-last')
@@ -440,7 +625,11 @@ if File.exists?("/opt/#{$pkg_base}/bin/membase")
   step("bucket-delete...",
        "/opt/#{$pkg_base}/bin/membase bucket-delete -c 127.0.0.1 \
           -u Administrator -p password \
-          --bucket=default")
+          --bucket=default",
+       nil, nil,
+       <<-'EOD')
+Delete the default bucket.
+EOD
 
   sleep(2)
 
@@ -450,7 +639,12 @@ if File.exists?("/opt/#{$pkg_base}/bin/membase")
        "/opt/#{$pkg_base}/bin/membase bucket-create -c 127.0.0.1 \
           -u Administrator -p password \
           --bucket=default --bucket-type=membase --bucket-password= \
-          --bucket-ramsize=#{$ram_quota} --bucket-replica=#{$replica_count}")
+          --bucket-ramsize=#{$ram_quota} --bucket-replica=#{$replica_count}",
+       nil, nil,
+       <<-'EOD')
+After the default bucket was deleted, create it again with the same config,
+so it should be an empty bucket.
+EOD
 
   sleep(2)
 
@@ -458,7 +652,12 @@ if File.exists?("/opt/#{$pkg_base}/bin/membase")
 
   clog_num_items = 100000
 
-  step("clogging...", nil, nil, clog_num_items)
+  step("clogging...", nil, nil, clog_num_items,
+       <<-'EOD')
+After the bucket was re-created (and is now an empty bucket), turn off
+persistence draining (via mbflushctl stop).  Then sequentially
+load #{clog_num_items} number of items.
+EOD
 
   proc_stats_start()
 
@@ -474,7 +673,11 @@ if File.exists?("/opt/#{$pkg_base}/bin/membase")
 
   # ------------------------------------
 
-  step("unclogging...", nil, nil, clog_num_items)
+  step("unclogging...", nil, nil, clog_num_items,
+       <<-'EOD')
+Coming after the clogging step: turn on persistence draining again,
+and wait until the persistence queue drains to zero.
+EOD
 
   run("/opt/#{$pkg_base}/bin/mbflushctl 127.0.0.1:11210 start")
 
@@ -489,7 +692,11 @@ end
 # ------------------------------------
 
 step("done...",
-     "sudo /etc/init.d/#{$pkg_base}-server stop")
+     "sudo /etc/init.d/#{$pkg_base}-server stop",
+     nil, nil,
+     <<-'EOD')
+Stop the server and kill processes.
+EOD
 
 run("killall -9 heart")
 run("killall -9 couchdb")
