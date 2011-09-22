@@ -26,6 +26,9 @@ buildComparison <- function(df, field, value) {
   colnames(dfsub)[7] <- 'comptime'
   rv <- merge(df, dfsub[,-(1:3)])
   rv <- transform(rv, xtime=time / comptime)
+}
+
+sortComparison <- function(rv) {
   rv[order(rv$build, rv$vbuckets, decreasing=TRUE),]
 }
 
@@ -97,7 +100,7 @@ if (length(uploadName) > 0) {
   kinds <- getKinds()
   mclapply(comparisions,
            function(relto)
-             makeOne(merge(buildComparison(df, 'build', relto), kinds),
+             makeOne(sortComparison(merge(buildComparison(df, 'build', relto), kinds)),
                      paste(uploadName, relto, 'rel.pdf', sep='.')))
 } else {
   cat("Please choose an upload:\n\n * ")
