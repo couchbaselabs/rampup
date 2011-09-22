@@ -22,15 +22,18 @@ def process_file(db, upload, test, filename, run, build, ram_quota, replica_coun
 
     for line in f:
         if line.find('done. elapsed: ') > 0:
-            # Example line == "# 6. view-building... done. elapsed: 0.10278"
-            #
-            parts   = line.split(' ')
-            step    = int(parts[1].rstrip('.'))
-            label   = parts[2].rstrip('.')
-            elapsed = float(parts[-1])
+            try:
+                # Example line == "# 6. view-building... done. elapsed: 0.10278"
+                #
+                parts   = line.split(' ')
+                step    = int(parts[1].rstrip('.'))
+                label   = parts[2].rstrip('.')
+                elapsed = float(parts[-1])
 
-            labels.append(label)
-            details.append({ 'step': step, 'label': label, 'elapsed': elapsed })
+                labels.append(label)
+                details.append({ 'step': step, 'label': label, 'elapsed': elapsed })
+            except:
+                pass
 
     f.close()
 

@@ -295,6 +295,7 @@ EOD
 
   step("index-mid-building...",
        index_build_cmd,
+       nil, nil,
        <<-'EOD')
 Build the 'mid' index.
 EOD
