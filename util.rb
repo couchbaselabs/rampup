@@ -27,15 +27,15 @@ $step_num  = 0
 def step(mesg, cmd=nil, elapsed=nil, work=nil, description=nil)
   if description
     `mkdir -p ./step`
-    step_name = mesg.gsub('.', '')
-    step_desc = "./step/#{step_name}.json"
+    step_name = mesg.gsub('.', '').split(' ')[0]
+    step_file = "./step/#{step_name}.json"
     step_doc = <<EOS
 { "_id": "step_#{step_name}",
   "kind": "step",
   "description": "#{description.gsub("\n", ' ').strip}"
 }
 EOS
-    File.open(step_desc, 'w') {|f| f.write(step_doc) }
+    File.open(step_file, 'w') {|f| f.write(step_doc) }
   end
 
   $time_curr = Time.now
