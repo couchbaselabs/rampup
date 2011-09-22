@@ -14,6 +14,12 @@ getFlatData <- function(sub, n=NULL) {
   b
 }
 
+getKinds <- function() {
+  b <- getFlatData('_design/rviews/_view/kinds?reduce=false',
+                   c('id', 'label', 'description'))[,(c('label', 'description'))]
+  transform(b, label=factor(b$label), description=factor(b$description))
+}
+
 listTests <- function() {
   unlist(rbind(getFlatData('_design/rviews/_view/by_test?group_level=1')[,c(1)]))[1,]
 }

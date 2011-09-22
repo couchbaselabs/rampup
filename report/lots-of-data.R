@@ -29,6 +29,21 @@ buildComparison <- function(df, field, value) {
   rv[order(rv$build, rv$vbuckets, decreasing=TRUE),]
 }
 
+makeFootnote <- function(footnoteText=format(Sys.time(), "%d %b %Y"),
+                         size=.7, color=grey(.5)) {
+   require(grid)
+   pushViewport(viewport())
+   lines <- strwrap(footnoteText, width=120)
+   lapply(1:length(lines),
+          function(linenum)
+             grid.text(label=lines[[linenum]],
+                 x=unit(1,"npc") - unit(2, "mm"),
+                 y=unit(2 + (length(lines) - linenum) * 12, "pt"),
+                 just=c("right", "bottom"),
+                 gp=gpar(cex=size, col=color)))
+   popViewport()
+}
+
 makeOne <- function(r, filename) {
   pdf(filename)
 
@@ -49,6 +64,7 @@ makeOne <- function(r, filename) {
             opts(title=paste(comma(items),
                              prettySize(item_size, "%d"),
                              "items -", label)) +
+            opts(plot.margin=unit(c(0, 0, 30, 0), "pt")) +
             facet_wrap(~nodes, ncol=1, scales='free') +
             labs(y='Seconds', x='')
 
@@ -58,6 +74,7 @@ makeOne <- function(r, filename) {
           }
 
           print(p)
+          makeFootnote(d[1,'description'])
         } else {
           cat("Skipping", comma(items), label, "\n")
         }
@@ -77,9 +94,10 @@ if (length(uploadName) > 0) {
 
   comparisions <- c('mongodb-64-2.0.0-rc1', 'membase-1.7.1.1')
 
+  kinds <- getKinds()
   mclapply(comparisions,
            function(relto)
-             makeOne(buildComparison(df, 'build', relto),
+             makeOne(merge(buildComparison(df, 'build', relto), kinds),
                      paste(uploadName, relto, 'rel.pdf', sep='.')))
 } else {
   cat("Please choose an upload:\n\n * ")
