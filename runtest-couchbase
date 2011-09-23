@@ -439,13 +439,14 @@ end
 # ------------------------------------
 
 if true # $cli_kind[0] != 'couchdb'
-  ops_per_concurrent_client = 10000
+  ops_per_concurrent_client = 100000
 
   step("concurrent-usage...",
        nil, nil, $concurrency * ops_per_concurrent_client,
        <<-'EOD')
 Start #{$concurrency} concurrent number of clients,
-each which perform 10000 sequential ops.
+each which perform 100000 sequential ops (via port 11211
+or equivalent).
 10% of the ops will be sets.
 90% of the ops will be gets.
 95% of the sets will hit a hot item subset.
@@ -505,6 +506,71 @@ elapsed time for concurrent-usage-draining.
 EOD
 
    $time_prev = time_start_of_concurrent_usage
+
+  # ------------------------------------
+
+  step("concurrent-sets...",
+       nil, nil, $concurrency * ops_per_concurrent_client,
+       <<-'EOD')
+Start #{$concurrency} concurrent number of clients,
+each which perform 100000 sequential ops (via port 11211
+or equivalent).
+100% of the ops will be sets.
+95% of the sets will hit a hot item subset.
+The hot item subset is 20% of all the items.
+Items are JSON docs.
+Views are defined at this point, but are not accessed.
+EOD
+
+  time_start_of_concurrent_sets = Time.now
+
+  proc_stats_start()
+
+  pids = (1..$concurrency).map do |x|
+    fork do
+      run("./rampup-client #{$cli_kind[0]} 127.0.0.1:#{$cli_kind[1]}" \
+          " min_value_size=#{$val_size}" \
+          " num_items=#{$num_items}" \
+          " ratio_sets=1.0" \
+          " ratio_creates=0.0" \
+          " ratio_misses=0.05" \
+          " ratio_hot=0.2" \
+          " ratio_hot_sets=0.2" \
+          " num_vbuckets=#{$num_vbuckets}" \
+          " max_ops=#{ops_per_concurrent_client}")
+      exit
+    end
+  end
+
+  pids.map {|pid| [pid, Process.wait2(pid)] }
+
+  proc_stats_end()
+
+  killall("rampup-client")
+
+  # ------------------------------------
+
+  step("concurrent-sets-draining...",
+       nil, nil, nil,
+       <<-'EOD')
+Right after the concurrent-sets step, wait until the
+persistence queues have drained to zero.
+EOD
+
+  wait_until_queue_drained()
+
+  # ------------------------------------
+
+  step("concurrent-sets-total...",
+       nil, nil, nil,
+       <<-'EOD')
+Measures the time for the queue to drain to zero,
+since the start of the previous concurrent-sets step.
+So, this equals elapsed time for concurrent-set +
+elapsed time for concurrent-sets-draining.
+EOD
+
+   $time_prev = time_start_of_concurrent_sets
 end
 
 # ------------------------------------
