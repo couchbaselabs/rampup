@@ -444,14 +444,18 @@ if true # $cli_kind[0] != 'couchdb'
   step("concurrent-usage...",
        nil, nil, $concurrency * ops_per_concurrent_client,
        <<-'EOD')
-Start #{$concurrency} concurrent number of clients, each which perform
-10000 ops.
+Start #{$concurrency} concurrent number of clients,
+each which perform 10000 sequential ops.
 10% of the ops will be sets.
 90% of the ops will be gets.
 95% of the sets will hit a hot item subset.
 95% of the gets will hit a hot item subset.
 The hot item subset is 20% of all the items.
+Items are JSON docs.
+Views are defined at this point, but are not accessed.
 EOD
+
+  time_start_of_concurrent_usage = Time.now
 
   proc_stats_start()
 
@@ -488,6 +492,19 @@ persistence queues have drained to zero.
 EOD
 
   wait_until_queue_drained()
+
+  # ------------------------------------
+
+  step("concurrent-usage-total...",
+       nil, nil, nil,
+       <<-'EOD')
+Measures the time for the queue to drain to zero,
+since the start of the previous concurrent-usage step.
+So, this equals elapsed time for concurrent-usage +
+elapsed time for concurrent-usage-draining.
+EOD
+
+   $time_prev = time_start_of_concurrent_usage
 end
 
 # ------------------------------------
