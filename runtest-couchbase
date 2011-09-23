@@ -488,9 +488,11 @@ persistence queues have drained to zero.
 EOD
 
   wait_until_queue_drained()
+end
 
-  # ------------------------------------
+# ------------------------------------
 
+if index
   step("index-mutating...",
        nil, nil, nil,
        <<-'EOD')
