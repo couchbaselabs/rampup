@@ -438,7 +438,7 @@ end
 
 # ------------------------------------
 
-if $cli_kind[0] != 'couchdb'
+if true # $cli_kind[0] != 'couchdb'
   ops_per_concurrent_client = 10000
 
   step("concurrent-usage...",
