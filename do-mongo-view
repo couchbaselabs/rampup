@@ -22,11 +22,13 @@ coll = db.collection($collName)
 a = Time.now
 
 for x in 0..n
+  q = k.modulo(100).abs
+
   query = {}
-  query[v] = { "$gte" => k.to_s }
+  query[v] = { "$gte" => q.to_s }
 
   if query_eq
-    query[v] = { "$eq" => k.to_s }
+    query[v] = { "$eq" => q.to_s }
   end
 
   # Not running through the result seems, interestingly, faster.
@@ -35,8 +37,7 @@ for x in 0..n
   #
   coll.find(query).limit(10).each {|doc| doc }
 
-  k = k + 1
-  k = 0 if k >= 100
+  k = k + k.hash
 end
 
 b = Time.now

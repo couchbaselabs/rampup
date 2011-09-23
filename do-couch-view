@@ -42,11 +42,13 @@ a = Time.now
 
 MyHTTP.new(host, "5984").start do |http|
   for x in 0..n
+    q = k.modulo(100).abs
+
     extra = ""
-    extra = "&endkey=%22#{k}%22" if comparison == "eq"
+    extra = "&endkey=%22#{q}%22" if comparison == "eq"
 
     path = "/default/_design/rampup-#{v}/#{cmd}/#{v}" \
-           "?startkey=%22#{k}%22&limit=10#{extra}&stale=ok#{params}"
+           "?startkey=%22#{q}%22&limit=10#{extra}&stale=ok#{params}"
 
     req = Net::HTTP::Get.new(base + path)
     req.add_field('Connection', 'keep-alive')
@@ -61,8 +63,7 @@ MyHTTP.new(host, "5984").start do |http|
       end
     end
 
-    k = k + 1
-    k = 0 if k >= 100
+    k = k + k.hash
   end
 end
 
