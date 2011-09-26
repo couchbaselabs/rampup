@@ -7,7 +7,8 @@
 cp /opt/couchbase/etc/couchdb/default.ini /opt/couchbase/etc/couchdb/default.ini.orig
 
 sed -e "s,os_process_limit = 50,os_process_limit = 0,g" /opt/couchbase/etc/couchdb/default.ini.orig | \
-  sed -e "s,;socket_options,socket_options,g" > /opt/couchbase/etc/couchdb/default.ini
+  sed -e "s,;bind_address = 127.0.0.1,bind_address = 0.0.0.0,g" | \
+    sed -e "s,;socket_options,socket_options,g" > /opt/couchbase/etc/couchdb/default.ini
 
 echo -e "[native_query_servers]\nerlang = {couch_native_process, start_link, []}\n" >> /opt/couchbase/etc/couchdb/default.ini
 
