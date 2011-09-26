@@ -28,12 +28,13 @@ $val_size      = ARGV[6] || "1000"
 $concurrency   = (ARGV[7] || "10").to_i
 $join_url      = ARGV[8]
 
-$opts = {}
+$opts = { 'host' => '127.0.0.1' }
 (ARGV[9] || "").split(',').each {|x|
   key, val = x.split('=')
   $opts[key] = val
 }
 
+$host        = $opts['host']
 $extra_sleep = $opts['extra_sleep']
 
 index = true
@@ -101,11 +102,11 @@ if $join_url and $join_url.length > 0 and $join_url != "none"
     -u Administrator -p password"
 else
   sleep(3)
-  run "/opt/#{$pkg_base}/bin/membase cluster-init -c 127.0.0.1 \
+  run "/opt/#{$pkg_base}/bin/membase cluster-init -c #{$host} \
     --cluster-init-username=Administrator \
     --cluster-init-password=password"
   sleep(3)
-  run "/opt/#{$pkg_base}/bin/membase bucket-create -c 127.0.0.1 \
+  run "/opt/#{$pkg_base}/bin/membase bucket-create -c #{$host} \
     -u Administrator -p password \
     --bucket=default --bucket-type=membase --bucket-password= \
     --bucket-ramsize=#{$ram_quota} --bucket-replica=#{$replica_count}"
@@ -116,17 +117,17 @@ sleep $extra_sleep.to_i if $extra_sleep
 
 if $cli_kind[0] == 'couchdb' and $num_vbuckets > 1
   (0..($num_vbuckets - 1)).each do |partition|
-    run "curl -vX PUT http://127.0.0.1:5984/default%2F#{partition}"
+    run "curl -vX PUT http://#{$host}:5984/default%2F#{partition}"
   end
 end
 
 def load_design_doc(kind)
   if $cli_kind[0] == 'couchdb' and $num_vbuckets > 1
-    run "curl -vX PUT http://127.0.0.1:5984/default%2Fmaster"
-    run "curl -vX PUT http://127.0.0.1:5984/default%2Fmaster/_design/rampup-#{kind} -d @index/rampup-#{kind}.json"
+    run "curl -vX PUT http://#{$host}:5984/default%2Fmaster"
+    run "curl -vX PUT http://#{$host}:5984/default%2Fmaster/_design/rampup-#{kind} -d @index/rampup-#{kind}.json"
   else
-    run "curl -vX PUT http://127.0.0.1:5984/default"
-    run "curl -vX PUT http://127.0.0.1:5984/default/_design/rampup-#{kind} -d @index/rampup-#{kind}.json"
+    run "curl -vX PUT http://#{$host}:5984/default"
+    run "curl -vX PUT http://#{$host}:5984/default/_design/rampup-#{kind} -d @index/rampup-#{kind}.json"
   end
 
   sleep 1
@@ -139,7 +140,7 @@ load_design_doc('last')
 bulk_load_batch = 100
 
 step("loading-docs...",
-     "./rampup-client #{$cli_kind[0]} 127.0.0.1:#{$cli_kind[1]}" \
+     "./rampup-client #{$cli_kind[0]} #{$host}:#{$cli_kind[1]}" \
      " ratio_sets=1.0 ratio_creates=1.0" \
      " min_value_size=#{$val_size}" \
      " max_creates=#{$num_items} exit_after_creates=1" \
@@ -164,7 +165,7 @@ EOD
 def wait_until_queue_drained()
   i = 0
   while i < 100000
-    w = `/opt/#{$pkg_base}/bin/mbstats 127.0.0.1:11210 all | egrep "ep_queue_size|ep_flusher_todo"`
+    w = `/opt/#{$pkg_base}/bin/mbstats #{$host}:11210 all | egrep "ep_queue_size|ep_flusher_todo"`
     w = w.strip.split(/[\s\n\t]+/).select {|x| !x.include?(':') and x != '0' }
     break if w.empty?
     i = i + 1
@@ -181,7 +182,7 @@ proc_stats_end()
 # ------------------------------------
 
 step("reading-docs...",
-     "./rampup-client #{$cli_kind[0]} 127.0.0.1:#{$cli_kind[1]}" \
+     "./rampup-client #{$cli_kind[0]} #{$host}:#{$cli_kind[1]}" \
      " ratio_sets=0.0" \
      " min_value_size=#{$val_size}" \
      " num_items=#{$num_items}" \
@@ -213,11 +214,11 @@ EOD
   # ------------------------------------
 
   def index_cmd(name)
-    index_build_cmd = "curl -v http://127.0.0.1:5984/default/_design/rampup-#{name}/_view/#{name}?limit=10"
+    index_build_cmd = "curl -v http://#{$host}:5984/default/_design/rampup-#{name}/_view/#{name}?limit=10"
     index_access = "_view"
 
     if $cli_kind[0] == 'couchdb' and $num_vbuckets > 1
-      index_build_cmd = "curl -v \"http://127.0.0.1:5984/default/_design/rampup-#{name}/_set_view/#{name}?limit=10\&partitions=#{$num_vbuckets}\""
+      index_build_cmd = "curl -v \"http://#{$host}:5984/default/_design/rampup-#{name}/_set_view/#{name}?limit=10\&partitions=#{$num_vbuckets}\""
       index_access = "_set_view"
     end
 
@@ -242,7 +243,7 @@ EOD
   # ------------------------------------
 
   step("index-accessing...",
-       "./do-couch-view 127.0.0.1 #{num_views} last gte #{index_access} #{capture_response("index-accessing")} >> #{$out_file}",
+       "./do-couch-view #{$host} #{num_views} last gte #{index_access} #{capture_response("index-accessing")} >> #{$out_file}",
        nil, num_views,
        <<-'EOD')
 Access the last (high-fan-out) index 10,000 times, serially,
@@ -251,7 +252,7 @@ Against couch, that means a startkey but no endkey.
 EOD
 
   step("index-accessing2...",
-       "./do-couch-view 127.0.0.1 #{num_views} last gte #{index_access} #{capture_response("index-accessing2")} >> #{$out_file}",
+       "./do-couch-view #{$host} #{num_views} last gte #{index_access} #{capture_response("index-accessing2")} >> #{$out_file}",
        nil, num_views,
        <<-'EOD')
 Access the last (high-fan-out) index 10,000 times, serially,
@@ -260,7 +261,7 @@ a second time to see if system caching has an effect.
 EOD
 
   step("index-eq-accessing...",
-       "./do-couch-view 127.0.0.1 #{num_views} last eq #{index_access} #{capture_response("index-eq-accessing")} >> #{$out_file}",
+       "./do-couch-view #{$host} #{num_views} last eq #{index_access} #{capture_response("index-eq-accessing")} >> #{$out_file}",
        nil, num_views,
        <<-'EOD')
 Access the last (high-fan-out) index 10,000 times, serially,
@@ -269,7 +270,7 @@ that means a startkey is the same as the endkey.
 EOD
 
   step("index-eq-accessing2...",
-       "./do-couch-view 127.0.0.1 #{num_views} last eq #{index_access} #{capture_response("index-eq-accessing2")} >> #{$out_file}",
+       "./do-couch-view #{$host} #{num_views} last eq #{index_access} #{capture_response("index-eq-accessing2")} >> #{$out_file}",
        nil, num_views,
        <<-'EOD')
 Access the last (high-fan-out) index 10,000 times, serially,
@@ -303,7 +304,7 @@ EOD
   # ------------------------------------
 
   step("index-mid-accessing...",
-       "./do-couch-view 127.0.0.1 #{num_views} mid gte #{index_access} #{capture_response("index-mid-accessing")} >> #{$out_file}",
+       "./do-couch-view #{$host} #{num_views} mid gte #{index_access} #{capture_response("index-mid-accessing")} >> #{$out_file}",
        nil, num_views,
        <<-'EOD')
 Access the mid (low-fan-out) index 10,000 times, serially,
@@ -312,7 +313,7 @@ Against couch, that means a startkey but no endkey.
 EOD
 
   step("index-mid-accessing2...",
-       "./do-couch-view 127.0.0.1 #{num_views} mid gte #{index_access} #{capture_response("index-mid-accessing2")} >> #{$out_file}",
+       "./do-couch-view #{$host} #{num_views} mid gte #{index_access} #{capture_response("index-mid-accessing2")} >> #{$out_file}",
        nil, num_views,
        <<-'EOD')
 Access the mid (low-fan-out) index 10,000 times, serially,
@@ -321,7 +322,7 @@ a second time to see if system caching has an effect.
 EOD
 
   step("index-mid-eq-accessing...",
-       "./do-couch-view 127.0.0.1 #{num_views} mid eq #{index_access} #{capture_response("index-mid-eq-accessing")} >> #{$out_file}",
+       "./do-couch-view #{$host} #{num_views} mid eq #{index_access} #{capture_response("index-mid-eq-accessing")} >> #{$out_file}",
        nil, num_views,
        <<-'EOD')
 Access the mid (low-fan-out) index 10,000 times, serially,
@@ -330,7 +331,7 @@ Against couch, that means a startkey but no endkey.
 EOD
 
   step("index-mid-eq-accessing2...",
-       "./do-couch-view 127.0.0.1 #{num_views} mid eq #{index_access} #{capture_response("index-mid-eq-accessing2")} >> #{$out_file}",
+       "./do-couch-view #{$host} #{num_views} mid eq #{index_access} #{capture_response("index-mid-eq-accessing2")} >> #{$out_file}",
        nil, num_views,
        <<-'EOD')
 Access the mid (low-fan-out) index 10,000 times, serially,
@@ -364,7 +365,7 @@ EOD
   # ------------------------------------
 
   step("index-lastCount-accessing...",
-       "./do-couch-view 127.0.0.1 #{num_views} lastCount gte #{index_access} #{capture_response("index-lastCount-accessing")} >> #{$out_file}",
+       "./do-couch-view #{$host} #{num_views} lastCount gte #{index_access} #{capture_response("index-lastCount-accessing")} >> #{$out_file}",
        nil, num_views,
        <<-'EOD')
 Access the lastCount index 10,000 times, serially,
@@ -375,7 +376,7 @@ EOD
   # ------------------------------------
 
   step("index-lastCount-group-accessing...",
-       "./do-couch-view 127.0.0.1 #{num_views} lastCount gte #{index_access},group=true #{capture_response("index-lastCount-group-accessing")} >> #{$out_file}",
+       "./do-couch-view #{$host} #{num_views} lastCount gte #{index_access},group=true #{capture_response("index-lastCount-group-accessing")} >> #{$out_file}",
        nil, num_views,
        <<-'EOD')
 Access the lastCount index 10,000 times, serially,
@@ -388,7 +389,7 @@ EOD
 
   if $cli_kind[0] == 'couchdb' and $num_vbuckets > 1
     step("disabling-partition...",
-         "curl -vX PUT http://127.0.0.1:5984/default/_design/rampup-last/_set_view/disable_partition/0",
+         "curl -vX PUT http://#{$host}:5984/default/_design/rampup-last/_set_view/disable_partition/0",
          nil, nil,
          <<-'EOD')
 Disable partition 0 to simulate a moved vbucket.
@@ -397,7 +398,7 @@ EOD
     ["last", "lastCount"].each do |view|
       index_build_cmd, index_access = index_cmd(view)
       step("disabled-partition-index-#{view}-accessing...",
-           "./do-couch-view 127.0.0.1 #{num_views} last gte #{index_access} #{capture_response("disabled-partition-#{view}-accessing")} >> #{$out_file}",
+           "./do-couch-view #{$host} #{num_views} last gte #{index_access} #{capture_response("disabled-partition-#{view}-accessing")} >> #{$out_file}",
            nil, num_views,
        <<-'EOD')
 While partition 0 disabled, access the view 10,000 times, serially,
@@ -406,7 +407,7 @@ EOD
     end
 
     step("disabled-partition-index-lastCount-group-accessing...",
-         "./do-couch-view 127.0.0.1 #{num_views} lastCount gte #{index_access},group=true #{capture_response("disabled-partition-lastCount-group-accessing")} >> #{$out_file}",
+         "./do-couch-view #{$host} #{num_views} lastCount gte #{index_access},group=true #{capture_response("disabled-partition-lastCount-group-accessing")} >> #{$out_file}",
          nil, num_views,
          <<-'EOD')
 While partition 0 is disabled, access the lastCount index 10,000 times, serially,
@@ -415,7 +416,7 @@ Against couch, that means a startkey but no endkey.
 EOD
 
     step("enabling-partition...",
-         "curl -vX PUT http://127.0.0.1:5984/default/_design/rampup-last/_set_view/enable_partition/0",
+         "curl -vX PUT http://#{$host}:5984/default/_design/rampup-last/_set_view/enable_partition/0",
          nil, nil,
          <<-'EOD')
 Re-enable partition 0 so that all partitions are active.
@@ -424,7 +425,7 @@ EOD
     ["last", "lastCount"].each do |view|
       index_build_cmd, index_access = index_cmd(view)
       step("enabled-partition-index-#{view}-accessing...",
-           "./do-couch-view 127.0.0.1 #{num_views} last gte #{index_access} #{capture_response("enabled-partition-#{view}-accessing")} >> #{$out_file}",
+           "./do-couch-view #{$host} #{num_views} last gte #{index_access} #{capture_response("enabled-partition-#{view}-accessing")} >> #{$out_file}",
            nil, num_views,
            <<-'EOD')
 With partition 0 re-enabled, access the view 10,000 times, serially,
@@ -433,7 +434,7 @@ EOD
     end
 
     step("enabled-partition-index-lastCount-group-accessing...",
-         "./do-couch-view 127.0.0.1 #{num_views} lastCount gte #{index_access},group=true #{capture_response("enabled-partition-lastCount-group-accessing")} >> #{$out_file}",
+         "./do-couch-view #{$host} #{num_views} lastCount gte #{index_access},group=true #{capture_response("enabled-partition-lastCount-group-accessing")} >> #{$out_file}",
          nil, num_views,
          <<-'EOD')
 While partition 0 is re-enabled, access the lastCount index 10,000 times, serially,
@@ -492,7 +493,7 @@ EOD
 
   pids = (1..$concurrency).map do |x|
     fork do
-      run("./rampup-client #{$cli_kind[0]} 127.0.0.1:#{$cli_kind[1]}" \
+      run("./rampup-client #{$cli_kind[0]} #{$host}:#{$cli_kind[1]}" \
           " min_value_size=#{$val_size}" \
           " num_items=#{$num_items}" \
           " ratio_sets=0.1" \
@@ -558,7 +559,7 @@ EOD
 
   pids = (1..$concurrency).map do |x|
     fork do
-      run("./rampup-client #{$cli_kind[0]} 127.0.0.1:#{$cli_kind[1]}" \
+      run("./rampup-client #{$cli_kind[0]} #{$host}:#{$cli_kind[1]}" \
           " min_value_size=#{$val_size}" \
           " num_items=#{$num_items}" \
           " ratio_sets=1.0" \
@@ -622,7 +623,7 @@ EOD
   # Concurrently do some item mutations.
   #
   pid = fork do
-    run("./rampup-client #{$cli_kind[0]} 127.0.0.1:#{$cli_kind[1]}" \
+    run("./rampup-client #{$cli_kind[0]} #{$host}:#{$cli_kind[1]}" \
         " min_value_size=#{$val_size}" \
         " ratio_sets=1.0" \
         " ratio_creates=0.0" \
@@ -634,7 +635,7 @@ EOD
 
   proc_stats_start()
 
-  run("./do-couch-view 127.0.0.1 #{num_views} last gte #{index_access} #{capture_response("index-mutating")} >> #{$out_file}")
+  run("./do-couch-view #{$host} #{num_views} last gte #{index_access} #{capture_response("index-mutating")} >> #{$out_file}")
 
   proc_stats_end()
 
@@ -669,7 +670,7 @@ EOD
   # Concurrently do some item mutations.
   #
   pid = fork do
-    run("./rampup-client #{$cli_kind[0]} 127.0.0.1:#{$cli_kind[1]}" \
+    run("./rampup-client #{$cli_kind[0]} #{$host}:#{$cli_kind[1]}" \
         " min_value_size=#{$val_size}" \
         " ratio_sets=1.0" \
         " ratio_creates=0.0" \
@@ -681,7 +682,7 @@ EOD
 
   proc_stats_start()
 
-  run("./do-couch-view 127.0.0.1 #{num_views} last gte #{index_access} #{capture_response("index-mutating")} >> #{$out_file}")
+  run("./do-couch-view #{$host} #{num_views} last gte #{index_access} #{capture_response("index-mutating")} >> #{$out_file}")
 
   proc_stats_end()
 
@@ -743,7 +744,7 @@ if File.exists?("/opt/#{$pkg_base}/bin/mbstats")
   i = 0
   while i < 100000
     sleep 2
-    w = `/opt/#{$pkg_base}/bin/mbstats 127.0.0.1:11210 all | grep "ep_warmup_thread:"`
+    w = `/opt/#{$pkg_base}/bin/mbstats #{$host}:11210 all | grep "ep_warmup_thread:"`
     w = w.split(' ')[-1]
     break if w == "complete"
     i = i + 1
@@ -751,7 +752,7 @@ if File.exists?("/opt/#{$pkg_base}/bin/mbstats")
 
   proc_stats_end()
 
-  w = `/opt/#{$pkg_base}/bin/mbstats 127.0.0.1:11210 all | grep "ep_warmup_time:"`
+  w = `/opt/#{$pkg_base}/bin/mbstats #{$host}:11210 all | grep "ep_warmup_time:"`
   w = (w.split(' ')[-1] || "0").to_i / 1000000 # ep_warmup_time is in microseconds.
 end
 
@@ -771,7 +772,7 @@ EOD
 
   i = 0
   while i < 100000
-    h = `curl -X GET http://127.0.0.1:5984/default/_design/rampup-last/_info`
+    h = `curl -X GET http://#{$host}:5984/default/_design/rampup-last/_info`
     break if h.include?('"compact_running":false')
     sleep 1
     i = i + 1
@@ -787,7 +788,7 @@ if File.exists?("/opt/#{$pkg_base}/bin/membase")
   # ------------------------------------
 
   step("bucket-delete...",
-       "/opt/#{$pkg_base}/bin/membase bucket-delete -c 127.0.0.1 \
+       "/opt/#{$pkg_base}/bin/membase bucket-delete -c #{$host} \
           -u Administrator -p password \
           --bucket=default",
        nil, nil,
@@ -800,7 +801,7 @@ EOD
   # ------------------------------------
 
   step("bucket-create...",
-       "/opt/#{$pkg_base}/bin/membase bucket-create -c 127.0.0.1 \
+       "/opt/#{$pkg_base}/bin/membase bucket-create -c #{$host} \
           -u Administrator -p password \
           --bucket=default --bucket-type=membase --bucket-password= \
           --bucket-ramsize=#{$ram_quota} --bucket-replica=#{$replica_count}",
@@ -826,9 +827,9 @@ EOD
 
   proc_stats_start()
 
-  run("/opt/#{$pkg_base}/bin/mbflushctl 127.0.0.1:11210 stop")
+  run("/opt/#{$pkg_base}/bin/mbflushctl #{$host}:11210 stop")
 
-  run("./rampup-client #{$cli_kind[0]} 127.0.0.1:#{$cli_kind[1]}" \
+  run("./rampup-client #{$cli_kind[0]} #{$host}:#{$cli_kind[1]}" \
       " ratio_sets=1.0 ratio_creates=1.0" \
       " min_value_size=#{$val_size}" \
       " max_creates=#{clog_num_items} exit_after_creates=1" \
@@ -844,7 +845,7 @@ Coming after the clogging step: turn on persistence draining again,
 and wait until the persistence queue drains to zero.
 EOD
 
-  run("/opt/#{$pkg_base}/bin/mbflushctl 127.0.0.1:11210 start")
+  run("/opt/#{$pkg_base}/bin/mbflushctl #{$host}:11210 start")
 
   proc_stats_start()
 
