@@ -179,61 +179,28 @@ end
 
 def prepare_cluster_existing(pkg_in, ram_quota, replica_count,
                              num_items, nodes, vbuckets, val_size, opts)
+  user  = opts['cluster.user']
+  hosts = opts['cluster.hosts'].split('+')
+
   return "none" if nodes <= 1
 
-  hosts = opts['cluster.hosts'].split('+')
-  user  = opts['cluster.user']
-
   if nodes > hosts.length + 1
-    print("ERROR: Not enough cluster.hosts (#{hosts}) for #{nodes} number of nodes.\n")
+    print("ERROR: Not enough cluster.hosts (#{hosts})" \
+          " for #{nodes} number of nodes.\n")
     exit(-1)
   end
 
   # Prepare a cluster a list of existing, pre-launched machines.
   #
-  pkg      = pkg_in
-  pkg      = pkg.split('/')[-1]
-  pkg_base = pkg.split('-')[0]
-  pkg_url  = "#{opts['cluster.package-url-base']}/#{pkg}"
-
   teardown_cluster_existing(pkg_in, ram_quota, replica_count,
                             num_items, nodes, vbuckets, val_size, opts)
 
   i = 1
   while i < nodes
     host = hosts[i - 1]
-
-    if opts['download'] == 'y'
-      run "#{$ssh} #{user}@#{host} sudo wget -O #{pkg_in} #{pkg_url}"
-    end
-
-    if opts['install'] == 'y'
-      run "#{$ssh} #{user}@#{host} sudo rpm -i #{pkg_in}"
-    end
-
-    run "#{$ssh} #{user}@#{host} rm -f after-install"
-    run "#{$ssh} #{user}@#{host} wget https://raw.github.com/couchbaselabs/rampup/master/after-install"
-    run "#{$ssh} #{user}@#{host} chmod a+x after-install"
-    run "#{$ssh} #{user}@#{host} sudo ./after-install #{vbuckets}"
-
-    if i == 1
-      run "#{$ssh} #{user}@#{host} /opt/#{pkg_base}/bin/membase \
-        cluster-init -c 127.0.0.1 \
-        --cluster-init-username=Administrator \
-        --cluster-init-password=password"
-      run "#{$ssh} #{user}@#{host} /opt/#{pkg_base}/bin/membase \
-        bucket-create -c 127.0.0.1 \
-        -u Administrator -p password \
-        --bucket=default --bucket-type=membase --bucket-password= \
-        --bucket-ramsize=#{ram_quota} \
-        --bucket-replica=#{replica_count}"
-    else
-      run "#{$ssh} #{user}@#{host} /opt/#{pkg_base}/bin/membase \
-        server-add -c #{hosts[0]} \
-        -u Administrator -p password \
-        --server-add=#{host}"
-    end
-
+    prepare_node(user, host, hosts[0],
+                 pkg_in, ram_quota, replica_count,
+                 num_items, nodes, vbuckets, val_size, opts)
     i = i + 1
   end
 
@@ -267,6 +234,46 @@ def teardown_cluster_existing(pkg_in, ram_quota, replica_count,
     if opts['download'] == 'y'
       run "#{$ssh} #{user}@#{host} sudo rm -rf /opt/#{pkg_base} #{pkg_in}"
     end
+  end
+end
+
+def prepare_node(user, host, main_host,
+                 pkg_in, ram_quota, replica_count,
+                 num_items, nodes, vbuckets, val_size, opts)
+  pkg      = pkg_in
+  pkg      = pkg.split('/')[-1]
+  pkg_base = pkg.split('-')[0]
+  pkg_url  = "#{opts['cluster.package-url-base']}/#{pkg}"
+
+  if opts['download'] == 'y'
+    run "#{$ssh} #{user}@#{host} sudo wget -O #{pkg_in} #{pkg_url}"
+  end
+
+  if opts['install'] == 'y'
+    run "#{$ssh} #{user}@#{host} sudo rpm -i #{pkg_in}"
+  end
+
+  run "#{$ssh} #{user}@#{host} rm -f after-install"
+  run "#{$ssh} #{user}@#{host} wget https://raw.github.com/couchbaselabs/rampup/master/after-install"
+  run "#{$ssh} #{user}@#{host} chmod a+x after-install"
+  run "#{$ssh} #{user}@#{host} sudo ./after-install #{vbuckets}"
+
+  if host == main_host
+    run "#{$ssh} #{user}@#{host} /opt/#{pkg_base}/bin/membase \
+      cluster-init -c 127.0.0.1 \
+      --cluster-init-username=Administrator \
+      --cluster-init-password=password"
+    run "#{$ssh} #{user}@#{host} /opt/#{pkg_base}/bin/membase \
+      bucket-create -c 127.0.0.1 \
+      -u Administrator -p password \
+      --bucket=default --bucket-type=membase --bucket-password= \
+      --bucket-ramsize=#{ram_quota} \
+      --bucket-replica=#{replica_count}"
+  else
+    run "#{$ssh} #{user}@#{host} /opt/#{pkg_base}/bin/membase \
+      server-add -c #{main_host} \
+      -u Administrator -p password \
+      --server-add=#{host}"
   end
 end
 
