@@ -18,5 +18,6 @@ tar -xzvf rubygems-1.8.7.tgz
 cd rubygems-1.8.7
 sudo ruby setup.rb
 cd ~
-sudo gem install memcache dalli mongo
+sudo gem install memcache dalli
+sudo gem install mongo bson bson_ext SystemTimer
 git clone git://github.com/couchbaselabs/rampup.git
