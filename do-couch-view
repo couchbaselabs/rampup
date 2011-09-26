@@ -24,7 +24,7 @@ cmd_params = ARGV[4] || "_view"
 cmd        = cmd_params.split(',')[0]
 params     = ""
 if cmd_params.split(',')[1]
-  params "&" + cmd_params.split(',')[1]
+  params = "&" + cmd_params.split(',')[1]
 end
 
 out = nil
