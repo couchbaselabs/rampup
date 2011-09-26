@@ -42,7 +42,7 @@ def process_file(db, upload, test, filename, run, build, ram_quota, replica_coun
             'ram_quota': ram_quota, 'replica_count': replica_count,
             'items': num_items, 'nodes': num_nodes,
             'vbuckets': num_vbuckets, 'val_size': val_size,
-            'details': details,'date':datetime.datetime.ctime(datetime.datetime.now())
+            'details': details
           }
 
     id, rev = db.save(doc)
@@ -72,7 +72,8 @@ if __name__ == '__main__':
 
     couch = sys.argv[1] # Ex: "http://localhost:5984/viewperf"
     test  = sys.argv[2] # Ex: "289-physical"
-    upload = test
+
+    upload = datetime.datetime.now().strftime("%Y%m%d%H%M%S") + "-" + test
 
     print("upload: " + upload + "\n")
 
