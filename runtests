@@ -45,7 +45,8 @@ opts = {
   'stack.KeyName' => 'steveyen-key',
   'stack.InstanceType' => 'm1.large',
   'download' => 'y', # Whether we should download the target software pkg.
-  'install' => 'y'   # Whether we should install the target software pkg.
+  'install' => 'y',  # Whether we should install the target software pkg.
+  'target' => '127.0.0.1', # Host of 'main' node to use.
 }
 
 (ARGV[7] || "").split(',').each {|x|
@@ -182,6 +183,16 @@ def prepare_cluster_existing(pkg_in, ram_quota, replica_count,
   user  = opts['cluster.user']
   hosts = opts['cluster.hosts'].split('+')
 
+  target = opts['target']
+  if target and target != '127.0.0.1' and not hosts.include?(target)
+    teardown_node(user, target,
+                  pkg_in, ram_quota, replica_count,
+                  num_items, nodes, vbuckets, val_size, opts)
+    prepare_node(user, target, target,
+                 pkg_in, ram_quota, replica_count,
+                 num_items, nodes, vbuckets, val_size, opts)
+  end
+
   return "none" if nodes <= 1
 
   if nodes > hosts.length + 1
@@ -214,28 +225,14 @@ def teardown_cluster_existing(pkg_in, ram_quota, replica_count,
   hosts = opts['cluster.hosts'].split('+')
   user  = opts['cluster.user']
 
-  pkg      = pkg_in
-  pkg      = pkg.split('/')[-1]
-  pkg_base = pkg.split('-')[0]
-  pkg_url  = "#{opts['cluster.package-url-base']}/#{pkg}"
-
   hosts.each do |host|
-    run "#{$ssh} #{user}@#{host} sudo killall -9 memcached"
-    run "#{$ssh} #{user}@#{host} sudo /etc/init.d/#{pkg_base}-server stop"
-    run "#{$ssh} #{user}@#{host} sudo killall -9 heart"
-    run "#{$ssh} #{user}@#{host} sudo killall -9 couchdb"
-    run "#{$ssh} #{user}@#{host} sudo killall -9 beam.smp"
-    run "#{$ssh} #{user}@#{host} sudo killall -9 epmd"
-
-    if opts['install'] == 'y'
-      run "#{$ssh} #{user}@#{host} sudo rpm -e #{pkg_base}-server"
-    end
-
-    if opts['download'] == 'y'
-      run "#{$ssh} #{user}@#{host} sudo rm -rf /opt/#{pkg_base} #{pkg_in}"
-    end
+    teardown_node(user, host,
+                  pkg_in, ram_quota, replica_count,
+                  num_items, nodes, vbuckets, val_size, opts)
   end
 end
+
+# ------------------------------------------
 
 def prepare_node(user, host, main_host,
                  pkg_in, ram_quota, replica_count,
@@ -274,6 +271,30 @@ def prepare_node(user, host, main_host,
       server-add -c #{main_host} \
       -u Administrator -p password \
       --server-add=#{host}"
+  end
+end
+
+def teardown_node(user, host,
+                  pkg_in, ram_quota, replica_count,
+                  num_items, nodes, vbuckets, val_size, opts)
+  pkg      = pkg_in
+  pkg      = pkg.split('/')[-1]
+  pkg_base = pkg.split('-')[0]
+  pkg_url  = "#{opts['cluster.package-url-base']}/#{pkg}"
+
+  run "#{$ssh} #{user}@#{host} sudo killall -9 memcached"
+  run "#{$ssh} #{user}@#{host} sudo /etc/init.d/#{pkg_base}-server stop"
+  run "#{$ssh} #{user}@#{host} sudo killall -9 heart"
+  run "#{$ssh} #{user}@#{host} sudo killall -9 couchdb"
+  run "#{$ssh} #{user}@#{host} sudo killall -9 beam.smp"
+  run "#{$ssh} #{user}@#{host} sudo killall -9 epmd"
+
+  if opts['install'] == 'y'
+    run "#{$ssh} #{user}@#{host} sudo rpm -e #{pkg_base}-server"
+  end
+
+  if opts['download'] == 'y'
+    run "#{$ssh} #{user}@#{host} sudo rm -rf /opt/#{pkg_base} #{pkg_in}"
   end
 end
 
