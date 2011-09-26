@@ -4,8 +4,10 @@
 #
 # * Basic 64-bit Amazon Linux AMI 2011.02.1 Beta (AMI Id: ami-8e1fece7)
 # * m1.large or better
+# * Choose the same explicit Availability Zone for all your instances.
 # * Name it appropriately, and also add a Key of
 #   "Creator" -> "your email address" so you can find it later for killing.
+# * Choose the 'couchbase' security group.
 #
 # After it launches, ssh into it and run the following...
 #
