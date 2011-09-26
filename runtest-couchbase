@@ -375,7 +375,7 @@ EOD
   # ------------------------------------
 
   step("index-lastCount-group-accessing...",
-       "./do-couch-view 127.0.0.1 #{num_views} lastCount gte #{index_access},group=true #{capture_response("index-lastCount-accessing")} >> #{$out_file}",
+       "./do-couch-view 127.0.0.1 #{num_views} lastCount gte #{index_access},group=true #{capture_response("index-lastCount-group-accessing")} >> #{$out_file}",
        nil, num_views,
        <<-'EOD')
 Access the lastCount index 10,000 times, serially,
