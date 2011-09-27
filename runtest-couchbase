@@ -141,19 +141,37 @@ load_design_doc('last')
 bulk_load_batch = 100
 
 step("loading-docs...",
-     "./rampup-client #{$cli_kind[0]} #{$target}:#{$cli_kind[1]}" \
-     " ratio_sets=1.0 ratio_creates=1.0" \
-     " min_value_size=#{$val_size}" \
-     " max_creates=#{$num_items} exit_after_creates=1" \
-     " num_vbuckets=#{$num_vbuckets}" \
-     " bulk_load_batch=#{bulk_load_batch}" \
-     " json=#{$json}",
-     nil, $num_items,
+     nil, nil, $num_items,
      <<-'EOD')
-Serially load all documents.  The load pathway is via either moxi,
-mongos, or REST (for couchbase-single), depending on the target server.
-REST-based loading will use bulk-docs.
+Load all documents, with 10 concurrent clients.
+The load pathway is via either moxi, mongos, or REST (for couchbase-single),
+depending on the target server. REST-based loading will use bulk-docs.
 EOD
+
+proc_stats_start()
+
+child_items = $num_items.to_i / $concurrency
+
+pids = (1..$concurrency).map do |x|
+  fork do
+    run("./rampup-client #{$cli_kind[0]} #{$target}:#{$cli_kind[1]}" \
+        " ratio_sets=1.0 ratio_creates=1.0" \
+        " min_value_size=#{$val_size}" \
+        " max_items=#{$num_items}" \
+        " num_items=#{child_items * (x - 1)}" \
+        " max_creates=#{child_items} exit_after_creates=1" \
+        " num_vbuckets=#{$num_vbuckets}" \
+        " bulk_load_batch=#{bulk_load_batch}" \
+        " json=#{$json}")
+    exit
+  end
+end
+
+pids.map {|pid| [pid, Process.wait2(pid)] }
+
+proc_stats_end()
+
+killall("rampup-client")
 
 # ------------------------------------
 
