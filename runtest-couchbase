@@ -34,11 +34,12 @@ $opts = { 'target' => '127.0.0.1' }
   $opts[key] = val
 }
 
+$json        = ($opts['json'] || '1').to_i
 $target      = $opts['target']
 $extra_sleep = $opts['extra_sleep']
 
 index = true
-index = false if $pkg_base == 'membase'
+index = false if $pkg_base == 'membase' or $json != 1
 
 $du_path = "/opt/#{$pkg_base}/var"
 
@@ -145,7 +146,8 @@ step("loading-docs...",
      " min_value_size=#{$val_size}" \
      " max_creates=#{$num_items} exit_after_creates=1" \
      " num_vbuckets=#{$num_vbuckets}" \
-     " bulk_load_batch=#{bulk_load_batch}",
+     " bulk_load_batch=#{bulk_load_batch}" \
+     " json=#{$json}",
      nil, $num_items,
      <<-'EOD')
 Serially load all documents.  The load pathway is via either moxi,
@@ -187,7 +189,8 @@ step("reading-docs...",
      " min_value_size=#{$val_size}" \
      " num_items=#{$num_items}" \
      " num_vbuckets=#{$num_vbuckets}" \
-     " max_ops=10000",
+     " max_ops=10000" \
+     " json=#{$json}",
      nil, 10000,
      <<-'EOD')
 Serially read 10,000 documents.
@@ -503,7 +506,8 @@ EOD
           " ratio_hot_sets=0.2" \
           " ratio_hot_gets=0.2" \
           " num_vbuckets=#{$num_vbuckets}" \
-          " max_ops=#{ops_per_concurrent_client}")
+          " max_ops=#{ops_per_concurrent_client}" \
+          " json=#{$json}")
       exit
     end
   end
@@ -568,7 +572,8 @@ EOD
           " ratio_hot=0.2" \
           " ratio_hot_sets=0.2" \
           " num_vbuckets=#{$num_vbuckets}" \
-          " max_ops=#{ops_per_concurrent_client}")
+          " max_ops=#{ops_per_concurrent_client}" \
+          " json=#{$json}")
       exit
     end
   end
@@ -629,7 +634,8 @@ EOD
         " ratio_creates=0.0" \
         " num_items=#{$num_items}" \
         " num_vbuckets=#{$num_vbuckets}" \
-        " max_ops=#{$num_items}")
+        " max_ops=#{$num_items}" \
+        " json=#{$json}")
     exit
   end
 
@@ -676,7 +682,8 @@ EOD
         " ratio_creates=0.0" \
         " num_items=#{$num_items}" \
         " num_vbuckets=#{$num_vbuckets}" \
-        " max_ops=#{$num_items}")
+        " max_ops=#{$num_items}" \
+        " json=#{$json}")
     exit
   end
 
@@ -833,7 +840,8 @@ EOD
       " ratio_sets=1.0 ratio_creates=1.0" \
       " min_value_size=#{$val_size}" \
       " max_creates=#{clog_num_items} exit_after_creates=1" \
-      " bulk_load_batch=#{bulk_load_batch}")
+      " bulk_load_batch=#{bulk_load_batch}" \
+      " json=#{$json}")
 
   proc_stats_end()
 
