@@ -31,6 +31,11 @@ class StoreCouchDB < Store
                           target.split(':')[1].to_i)
     @bulk = {}
     @num_vbuckets = cfg.num_vbuckets
+
+    if cfg.json != 1
+      print("ERROR: StoreCouchDB supports only JSON documents\n")
+      exit(-1)
+    end
   end
 
   def command(cmd, key_num, key_str, data, bulk_load_batch = 1)
@@ -95,6 +100,7 @@ class StoreMemCache < Store
   def connect(target, cfg) # host:port
     @target = target
     @conn   = MemCache.new([target])
+    @json   = cfg.json == 1
   end
 
   def command(cmd, key_num, key_str, data, bulk_load_batch = 1)
@@ -109,6 +115,11 @@ class StoreMemCache < Store
     end
   end
 
+  def gen_doc(key_num, key_str, min_value_size)
+    gen_doc_string(key_num, key_str, min_value_size,
+                   key_name = "key", json = @json)
+  end
+
   def cmd_line_get(key_num, key_str)
     return "echo get #{key_str} | nc #{@target.split(':').join(' ')}"
   end
@@ -120,6 +131,7 @@ class StoreDalli < Store
   def connect(target, cfg) # host:port
     @target = target
     @conn   = Dalli::Client.new([target])
+    @json   = cfg.json == 1
     @opts   = { :raw => true }
   end
 
@@ -133,6 +145,11 @@ class StoreDalli < Store
       print("ERROR: unknown StoreDalli cmd: #{cmd}\n")
       exit(-1)
     end
+  end
+
+  def gen_doc(key_num, key_str, min_value_size)
+    gen_doc_string(key_num, key_str, min_value_size,
+                   key_name = "key", json = @json)
   end
 
   def cmd_line_get(key_num, key_str)
@@ -158,6 +175,11 @@ class StoreMongo < Store
     @conn = Mongo::Connection.new(@host, @port, :safe => true)
     @db   = @conn.db(@dbName)
     @coll = @db.collection(@collName)
+
+    if cfg.json != 1
+      print("ERROR: StoreMongo supports only JSON documents\n")
+      exit(-1)
+    end
   end
 
   def command(cmd, key_num, key_str, data, bulk_load_batch = 1)

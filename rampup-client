@@ -28,7 +28,8 @@ $cfg_defaults = {
   :bulk_load_batch => 1,    # When > 1, use batched bulk load optimization,
                             # if appropriate, flushing after this many inserts.
   :exit_after_creates => 0, # Exit after max_creates is reached.
-  :num_vbuckets => 0
+  :num_vbuckets => 0,
+  :json => 1                # Use JSON documents
 }
 
 $cur_defaults = {
@@ -122,8 +123,11 @@ def gen_doc_hash(key_num, key_str, min_value_size)
          }
 end
 
-def gen_doc_string(key_num, key_str, min_value_size, key_name = "key")
-  return "{\"#{key_name}\":\"#{key_str}\"," \
+def gen_doc_string(key_num, key_str, min_value_size, key_name = "key",
+                   json = true)
+  c = '{'
+  c = '*' unless json
+  return "#{c}\"#{key_name}\":\"#{key_str}\"," \
           "\"key_num\":#{key_num}," \
           "\"mid\":\"#{key_str[-8..-2]}\"," \
           "\"last\":\"#{key_str[-1..-1]}\"," +
