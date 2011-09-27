@@ -115,18 +115,6 @@ The cluster tests also depend on ssh access to remote machines, so you
 might want to ssh-add and use ssh agent forwarding ("ssh -A joe@10.2.1.15")
 so that runtests's attempts to ssh to other boxes will work.
 
-## EC2 Cloud Formation testing
-
-The runtest tool also has the ability to spin up nodes on-the-fly via
-the Amazon EC2 Cloud Formation API.  Set the cluster.type option to
-'cfn' to use this (less popular) approach.  The Cloud Formation tools
-(cfn commands) must also be pre-installed for this to work.
-
-You'll probably find, however, that spinning up a brand new cluster
-is somewhat slow, and not great for fast turnaround or debuggability.
-Instead, the previous, "static" pre-existing cluster approach seems
-to work much better.
-
 # Testing other software
 
 You can also use runtests against old versions of membase (although
