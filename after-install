@@ -18,11 +18,13 @@ sudo /etc/init.d/couchbase-server stop || true
 
 sudo killall heart beam.smp || true
 
-rm -f membase-server.num_vbuckets
-wget -O membase-server.num_vbuckets https://raw.github.com/couchbaselabs/rampup/master/membase-server.num_vbuckets
-
-sed -e "s,@@MEMBASE_NUM_VBUCKETS@@,$1,g" membase-server.num_vbuckets > \
-  /opt/couchbase/bin/membase-server
+if [ "$1" -gt 0 ]
+then
+  rm -f membase-server.num_vbuckets
+  wget -O membase-server.num_vbuckets https://raw.github.com/couchbaselabs/rampup/master/membase-server.num_vbuckets
+  sed -e "s,@@MEMBASE_NUM_VBUCKETS@@,$1,g" membase-server.num_vbuckets > \
+    /opt/couchbase/bin/membase-server
+fi
 
 sudo /etc/init.d/couchbase-server start
 

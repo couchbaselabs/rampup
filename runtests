@@ -28,9 +28,13 @@ num_items_arr      = (ARGV[3] || "100000").split(',').map {|x| x.to_i}
 nodes_arr          = (ARGV[4] || "1,2,5").split(',').map {|x| x.to_i}
 vbucket_range      = (ARGV[5] || "1-64").split('-').map {|x| x.to_i}
 
-vbucket_min  = 1
-vbucket_min  = vbucket_range[0] if vbucket_range.length > 1
-vbucket_max  = vbucket_range[-1]
+# 0 is valid vbucket param and means use default, out-of-the-box vbucket setting.
+#
+vbucket_min = 1
+vbucket_min = vbucket_range[0] if vbucket_range.length > 1
+vbucket_max = vbucket_range[-1]
+vbucket_min = [vbucket_min, vbucket_max].min
+
 val_size_arr = (ARGV[6] || "1000").split(',').map {|x| x.to_i}
 
 opts = {
