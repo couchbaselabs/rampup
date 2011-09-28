@@ -40,6 +40,7 @@ $extra_sleep = $opts['extra_sleep']
 
 index = true
 index = false if $pkg_base == 'membase' or $json != 1
+index = false if $opts['index'] == 'n'
 
 $du_path = "/opt/#{$pkg_base}/var"
 
