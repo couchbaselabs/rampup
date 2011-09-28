@@ -62,6 +62,8 @@ EOS
   $work_prev = work
 
   time(cmd) if cmd
+
+  yield if block_given?
 end
 
 def time(cmd)
