@@ -137,7 +137,7 @@ def load_design_doc(kind)
   sleep 1
 end
 
-load_design_doc('last')
+load_design_doc('last') if $pkg_base != 'membase'
 
 # ------------------------------------
 
