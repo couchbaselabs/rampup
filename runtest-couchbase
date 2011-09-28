@@ -51,10 +51,10 @@ step("preparing... #{$test_name}",
 run "sudo killall -9 memcached || true"
 
 ['couchbase', 'membase'].each do |x|
-  run "sudo /etc/init.d/#{x}-server stop || true"
   if $opts['install'] != 'n'
-      run "sudo rpm -e #{x}-server || true"
-      run "sudo rm -rf /opt/#{x}/"
+    run "sudo /etc/init.d/#{x}-server stop || true"
+    run "sudo rpm -e #{x}-server || true"
+    run "sudo rm -rf /opt/#{x}/"
   end
 end
 
