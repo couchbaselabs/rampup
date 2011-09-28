@@ -114,7 +114,7 @@ else
     --bucket-ramsize=#{$ram_quota} --bucket-replica=#{$replica_count}"
 end
 
-sleep 15
+sleep 20
 sleep $extra_sleep.to_i if $extra_sleep
 
 if $cli_kind[0] == 'couchdb' and $num_vbuckets > 1
@@ -837,7 +837,7 @@ After the default bucket was deleted, create it again with the same config,
 so it should be an empty bucket.
 EOD
 
-  sleep(2)
+  sleep(20)
 
   # ------------------------------------
 

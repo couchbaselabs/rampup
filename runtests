@@ -47,6 +47,7 @@ opts = {
   'download' => 'y', # Whether we should download the target software pkg.
   'install' => 'y',  # Whether we should install the target software pkg.
   'target' => '127.0.0.1', # Host of 'main' node to use.
+  'json' => 'y'
 }
 
 (ARGV[7] || "").split(',').each {|x|
@@ -234,11 +235,10 @@ ram_quotas_arr.each do |ram_quota|
       while i <= vbucket_max
         num_items_arr.each do |num_items|
           val_size_arr.each do |val_size|
-            [true, false].each do |json|
               test_dir, test_file = test_name(pkg, ram_quota, replica_count,
                                               num_items, nodes, i,
                                               val_size, opts,
-                                              json)
+                                              opts['json'] == 'y')
               `mkdir -p ./out/#{test_dir}`
 
               test_out = "#{test_dir}/#{test_file}.out"
@@ -248,20 +248,25 @@ ram_quotas_arr.each do |ram_quota|
                                         num_items, nodes, i,
                                         val_size, opts)
 
+              j = 0
+              j = 1 if opts['json'] == 'y'
+
               run "./runtest-#{pkg_base} #{test_out} #{pkg}" \
                   " #{ram_quota} #{replica_count} #{num_items} #{i} #{val_size}" \
-                  " 10 #{cluster || 'none'} #{opts_csv}"
+                  " 10 #{cluster || 'none'} #{opts_csv},json=#{j}"
               sleep 1
 
               if opts['cluster.teardown'] == 'y'
                 teardown_cluster(pkg, ram_quota, replica_count,
                                  num_items, nodes, i, val_size, opts)
               end
-            end
           end
         end
 
         i = i * 2
+
+        # Exit this loop if using default out-of-box vbucket config.
+        i = vbucket_max + 1 if i == 0
       end
     end
   end
