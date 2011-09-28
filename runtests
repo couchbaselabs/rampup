@@ -47,7 +47,8 @@ opts = {
   'download' => 'y', # Whether we should download the target software pkg.
   'install' => 'y',  # Whether we should install the target software pkg.
   'target' => '127.0.0.1', # Host of 'main' node to use.
-  'json' => 'y'
+  'json' => 'y',
+  'concurrency' => 10
 }
 
 (ARGV[7] || "").split(',').each {|x|
@@ -253,7 +254,9 @@ ram_quotas_arr.each do |ram_quota|
 
               run "./runtest-#{pkg_base} #{test_out} #{pkg}" \
                   " #{ram_quota} #{replica_count} #{num_items} #{i} #{val_size}" \
-                  " 10 #{cluster || 'none'} #{opts_csv},json=#{j}"
+                  " #{opts['concurrency'].to_i}" \
+                  " #{cluster || 'none'}" \
+                  " #{opts_csv},json=#{j}"
               sleep 1
 
               if opts['cluster.teardown'] == 'y'
