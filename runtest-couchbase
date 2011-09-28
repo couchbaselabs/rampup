@@ -78,7 +78,7 @@ if $opts['install'] != 'n'
   sleep $extra_sleep.to_i if $extra_sleep
 end
 
-if $pkg_base == 'membase'
+if $pkg_base != 'membase'
   run "rm -f after-install"
   run "wget https://raw.github.com/couchbaselabs/rampup/master/after-install"
   run "chmod a+x after-install"
