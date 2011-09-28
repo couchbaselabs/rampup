@@ -78,10 +78,12 @@ if $opts['install'] != 'n'
   sleep $extra_sleep.to_i if $extra_sleep
 end
 
-run "rm -f after-install"
-run "wget https://raw.github.com/couchbaselabs/rampup/master/after-install"
-run "chmod a+x after-install"
-run "sudo ./after-install #{$num_vbuckets}"
+if $pkg_base == 'membase'
+  run "rm -f after-install"
+  run "wget https://raw.github.com/couchbaselabs/rampup/master/after-install"
+  run "chmod a+x after-install"
+  run "sudo ./after-install #{$num_vbuckets}"
+end
 
 # ------------------------------------
 
