@@ -142,6 +142,7 @@ load_design_doc('last') if $pkg_base != 'membase'
 # ------------------------------------
 
 bulk_load_batch = 100
+used_memcachetest = false
 
 step("loading-docs...",
      nil, nil, $num_items,
@@ -153,7 +154,7 @@ EOD
 
 proc_stats_start()
 
-if $json == 0 and ['couchbase', 'membase'].include?($cli_kind[0])
+if $opts['memcachetest'] = 'y' and $json == 0 and ['couchbase', 'membase'].include?($cli_kind[0])
   run("/opt/#{$pkg_base}/bin/memcachetest" \
       " -h #{$target}:#{$cli_kind[1]}" \
       " -t #{$concurrency}" \
@@ -161,6 +162,7 @@ if $json == 0 and ['couchbase', 'membase'].include?($cli_kind[0])
       " -m #{$val_size.to_i}" \
       " -M #{$val_size.to_i + 1}" \
       " -c 0")
+  used_memcachetest = true
 else
   child_items = $num_items.to_i / $concurrency
 
@@ -211,6 +213,10 @@ proc_stats_start()
 wait_until_queue_drained()
 
 proc_stats_end()
+
+# ------------------------------------
+
+exit if used_memcachetest
 
 # ------------------------------------
 
