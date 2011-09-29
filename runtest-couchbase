@@ -154,7 +154,7 @@ EOD
 
 proc_stats_start()
 
-if $opts['memcachetest'] = 'y' and $json == 0 and ['couchbase', 'membase'].include?($cli_kind[0])
+if $opts['memcachetest'] == 'y' and $json == 0 and ['couchbase', 'membase'].include?($cli_kind[0])
   run("/opt/#{$pkg_base}/bin/memcachetest" \
       " -h #{$target}:#{$cli_kind[1]}" \
       " -t #{$concurrency}" \
