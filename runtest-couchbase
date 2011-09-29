@@ -216,7 +216,20 @@ proc_stats_end()
 
 # ------------------------------------
 
-exit if used_memcachetest
+if used_memcachetest
+  step("done...",
+       "sudo /etc/init.d/#{$pkg_base}-server stop",
+       nil, nil,
+       <<-'EOD')
+Stop the server and kill processes.
+EOD
+
+  run("killall -9 heart")
+  run("killall -9 couchdb")
+  run("killall -9 beam.smp")
+  run("killall -9 epmd")
+  exit
+end
 
 # ------------------------------------
 
