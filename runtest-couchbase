@@ -153,24 +153,34 @@ EOD
 
 proc_stats_start()
 
-child_items = $num_items.to_i / $concurrency
+if $json == 0 and ['couchbase', 'membase'].include?($cli_kind[0])
+  run("/opt/#{$pkg_base}/bin/memcachetest" \
+      " -h #{$target}:#{$cli_kind[1]}" \
+      " -t #{$concurrency}" \
+      " -i #{$num_items}" \
+      " -m #{$val_size}" \
+      " -M #{$val_size + 1}" \
+      " -c 0")
+else
+  child_items = $num_items.to_i / $concurrency
 
-pids = (1..$concurrency).map do |x|
-  fork do
-    run("./rampup-client #{$cli_kind[0]} #{$target}:#{$cli_kind[1]}" \
-        " ratio_sets=1.0 ratio_creates=1.0" \
-        " min_value_size=#{$val_size}" \
-        " max_items=#{$num_items}" \
-        " num_items=#{child_items * (x - 1)}" \
-        " max_creates=#{child_items} exit_after_creates=1" \
-        " num_vbuckets=#{$num_vbuckets}" \
-        " bulk_load_batch=#{bulk_load_batch}" \
-        " json=#{$json}")
-    exit
+  pids = (1..$concurrency).map do |x|
+    fork do
+      run("./rampup-client #{$cli_kind[0]} #{$target}:#{$cli_kind[1]}" \
+          " ratio_sets=1.0 ratio_creates=1.0" \
+          " min_value_size=#{$val_size}" \
+          " max_items=#{$num_items}" \
+          " num_items=#{child_items * (x - 1)}" \
+          " max_creates=#{child_items} exit_after_creates=1" \
+          " num_vbuckets=#{$num_vbuckets}" \
+          " bulk_load_batch=#{bulk_load_batch}" \
+          " json=#{$json}")
+      exit
+    end
   end
-end
 
-pids.map {|pid| [pid, Process.wait2(pid)] }
+  pids.map {|pid| [pid, Process.wait2(pid)] }
+end
 
 proc_stats_end()
 
