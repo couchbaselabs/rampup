@@ -158,8 +158,8 @@ if $json == 0 and ['couchbase', 'membase'].include?($cli_kind[0])
       " -h #{$target}:#{$cli_kind[1]}" \
       " -t #{$concurrency}" \
       " -i #{$num_items}" \
-      " -m #{$val_size}" \
-      " -M #{$val_size + 1}" \
+      " -m #{$val_size.to_i}" \
+      " -M #{$val_size.to_i + 1}" \
       " -c 0")
 else
   child_items = $num_items.to_i / $concurrency
