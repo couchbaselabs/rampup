@@ -216,35 +216,20 @@ proc_stats_end()
 
 # ------------------------------------
 
-if used_memcachetest
-  step("done...",
-       "sudo /etc/init.d/#{$pkg_base}-server stop",
-       nil, nil,
+unless used_memcachetest
+  step("reading-docs...",
+       "./rampup-client #{$cli_kind[0]} #{$target}:#{$cli_kind[1]}" \
+       " ratio_sets=0.0" \
+       " min_value_size=#{$val_size}" \
+       " num_items=#{$num_items}" \
+       " num_vbuckets=#{$num_vbuckets}" \
+       " max_ops=10000" \
+       " json=#{$json}",
+       nil, 10000,
        <<-'EOD')
-Stop the server and kill processes.
-EOD
-
-  run("killall -9 heart")
-  run("killall -9 couchdb")
-  run("killall -9 beam.smp")
-  run("killall -9 epmd")
-  exit
-end
-
-# ------------------------------------
-
-step("reading-docs...",
-     "./rampup-client #{$cli_kind[0]} #{$target}:#{$cli_kind[1]}" \
-     " ratio_sets=0.0" \
-     " min_value_size=#{$val_size}" \
-     " num_items=#{$num_items}" \
-     " num_vbuckets=#{$num_vbuckets}" \
-     " max_ops=10000" \
-     " json=#{$json}",
-     nil, 10000,
-     <<-'EOD')
 Serially read 10,000 documents.
 EOD
+end
 
 # ------------------------------------
 
@@ -522,7 +507,7 @@ end
 
 # ------------------------------------
 
-if true # $cli_kind[0] != 'couchdb'
+unless used_memcachetest
   ops_per_concurrent_client = 100000
 
   step("concurrent-usage...",
