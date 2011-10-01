@@ -144,7 +144,7 @@ load_design_doc('last') if $pkg_base != 'membase'
 
 if $opts['client-side-moxi'] == 'y'
   $target_mc = "127.0.0.1"
-  $cli_kind[1] = 11911
+  $cli_kind[1] = 11511
   moxi = "/opt/#{$pkg_base}/bin/moxi" \
          " -Z port_listen=#{$cli_kind[1]}," \
              "default_bucket_name=default,downstream_max=1024,downstream_conn_max=4," \
