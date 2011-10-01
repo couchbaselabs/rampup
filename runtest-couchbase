@@ -927,4 +927,6 @@ run("killall -9 heart")
 run("killall -9 couchdb")
 run("killall -9 beam.smp")
 run("killall -9 epmd")
+run("killall -9 moxi")
+
 
