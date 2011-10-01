@@ -151,7 +151,7 @@ if $opts['client-side-moxi'] == 'y'
              "connect_max_errors=5,connect_retry_interval=30000,connect_timeout=400," \
              "auth_timeout=100,cycle=200," \
              "downstream_conn_queue_timeout=200,downstream_timeout=5000,wait_queue_timeout=200" \
-         " -z url=http://#{$target}:8091/pools/default/saslBucketsStreaming" \
+         " -z url=http://#{$target}:8091/pools/default/bucketsStreaming/default" \
          " -p 0 -O stderr -u #{$pkg_base} &"
   system(moxi)
   sleep(1)
