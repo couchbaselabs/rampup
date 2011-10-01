@@ -226,7 +226,7 @@ end
 
 # ------------------------------------------
 
-opts_csv = opts.keys.map {|k| "#{k}=#{opts[k]}" }.join(',')
+opts_csv = opts.keys.sort.map {|k| "#{k}=#{opts[k]}" }.join(',')
 
 ram_quotas_arr.each do |ram_quota|
   replica_counts_arr.each do |replica_count|

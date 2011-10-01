@@ -36,6 +36,7 @@ $opts = { 'target' => '127.0.0.1' }
 
 $json        = ($opts['json'] || '1').to_i
 $target      = $opts['target']
+$target_mc   = $opts['target']
 $extra_sleep = $opts['extra_sleep']
 
 index = true
@@ -141,6 +142,21 @@ load_design_doc('last') if $pkg_base != 'membase'
 
 # ------------------------------------
 
+if $opts['client-side-moxi'] == 'y'
+  $target_mc = "127.0.0.1"
+  $cli_kind[1] = 11911
+  moxi = "/opt/#{$pkg_base}/bin/moxi" \
+         " -Z port_listen=#{$cli_kind[1]}," \
+             "default_bucket_name=default,downstream_max=1024,downstream_conn_max=4," \
+             "connect_max_errors=5,connect_retry_interval=30000,connect_timeout=400," \
+             "auth_timeout=100,cycle=200," \
+             "downstream_conn_queue_timeout=200,downstream_timeout=5000,wait_queue_timeout=200" \
+         " -z url=http://#{$target}:8091/pools/default/saslBucketsStreaming" \
+         " -p 0 -O stderr &"
+  system(moxi)
+  sleep(1)
+end
+
 bulk_load_batch = 100
 used_memcachetest = false
 
@@ -156,7 +172,7 @@ proc_stats_start()
 
 if $opts['memcachetest'] == 'y' and $json == 0 and ['couchbase', 'membase'].include?($cli_kind[0])
   run("/opt/#{$pkg_base}/bin/memcachetest" \
-      " -h #{$target}:#{$cli_kind[1]}" \
+      " -h #{$target_mc}:#{$cli_kind[1]}" \
       " -t #{$concurrency}" \
       " -i #{$num_items}" \
       " -m #{$val_size.to_i}" \
@@ -168,7 +184,7 @@ else
 
   pids = (1..$concurrency).map do |x|
     fork do
-      run("./rampup-client #{$cli_kind[0]} #{$target}:#{$cli_kind[1]}" \
+      run("./rampup-client #{$cli_kind[0]} #{$target_mc}:#{$cli_kind[1]}" \
           " ratio_sets=1.0 ratio_creates=1.0" \
           " min_value_size=#{$val_size}" \
           " max_items=#{$num_items}" \
@@ -218,7 +234,7 @@ proc_stats_end()
 
 unless used_memcachetest
   step("reading-docs...",
-       "./rampup-client #{$cli_kind[0]} #{$target}:#{$cli_kind[1]}" \
+       "./rampup-client #{$cli_kind[0]} #{$target_mc}:#{$cli_kind[1]}" \
        " ratio_sets=0.0" \
        " min_value_size=#{$val_size}" \
        " num_items=#{$num_items}" \
@@ -531,7 +547,7 @@ EOD
 
   pids = (1..$concurrency).map do |x|
     fork do
-      run("./rampup-client #{$cli_kind[0]} #{$target}:#{$cli_kind[1]}" \
+      run("./rampup-client #{$cli_kind[0]} #{$target_mc}:#{$cli_kind[1]}" \
           " min_value_size=#{$val_size}" \
           " num_items=#{$num_items}" \
           " ratio_sets=0.1" \
@@ -598,7 +614,7 @@ EOD
 
   pids = (1..$concurrency).map do |x|
     fork do
-      run("./rampup-client #{$cli_kind[0]} #{$target}:#{$cli_kind[1]}" \
+      run("./rampup-client #{$cli_kind[0]} #{$target_mc}:#{$cli_kind[1]}" \
           " min_value_size=#{$val_size}" \
           " num_items=#{$num_items}" \
           " ratio_sets=1.0" \
@@ -663,7 +679,7 @@ EOD
   # Concurrently do some item mutations.
   #
   pid = fork do
-    run("./rampup-client #{$cli_kind[0]} #{$target}:#{$cli_kind[1]}" \
+    run("./rampup-client #{$cli_kind[0]} #{$target_mc}:#{$cli_kind[1]}" \
         " min_value_size=#{$val_size}" \
         " ratio_sets=1.0" \
         " ratio_creates=0.0" \
@@ -711,7 +727,7 @@ EOD
   # Concurrently do some item mutations.
   #
   pid = fork do
-    run("./rampup-client #{$cli_kind[0]} #{$target}:#{$cli_kind[1]}" \
+    run("./rampup-client #{$cli_kind[0]} #{$target_mc}:#{$cli_kind[1]}" \
         " min_value_size=#{$val_size}" \
         " ratio_sets=1.0" \
         " ratio_creates=0.0" \
