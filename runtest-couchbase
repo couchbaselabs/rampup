@@ -875,6 +875,10 @@ EOD
 
   clog_num_items = 100000
 
+  if $opts['memcachetest'] == 'y' and $json == 0 and ['couchbase', 'membase'].include?($cli_kind[0])
+    clog_num_items = $num_items.to_i
+  end
+
   step("clogging...", nil, nil, clog_num_items,
        <<-'EOD')
 After the bucket was re-created (and is now an empty bucket), turn off
@@ -894,8 +898,6 @@ EOD
         " -m #{$val_size.to_i}" \
         " -M #{$val_size.to_i + 1}" \
         " -c 0")
-    used_memcachetest = true
-    clog_num_items = $num_items.to_i
   else
     run("./rampup-client #{$cli_kind[0]} #{$target}:#{$cli_kind[1]}" \
         " ratio_sets=1.0 ratio_creates=1.0" \
