@@ -878,21 +878,32 @@ EOD
   step("clogging...", nil, nil, clog_num_items,
        <<-'EOD')
 After the bucket was re-created (and is now an empty bucket), turn off
-persistence draining (via mbflushctl stop).  Then serially
-load 100,000 number of items so the server queues get clogged up
-with mutations.
+persistence draining (via mbflushctl stop).  Then load items
+so the server queues get clogged up with mutations.
 EOD
 
   proc_stats_start()
 
   run("/opt/#{$pkg_base}/bin/mbflushctl #{$target}:11210 stop")
 
-  run("./rampup-client #{$cli_kind[0]} #{$target}:#{$cli_kind[1]}" \
-      " ratio_sets=1.0 ratio_creates=1.0" \
-      " min_value_size=#{$val_size}" \
-      " max_creates=#{clog_num_items} exit_after_creates=1" \
-      " bulk_load_batch=#{bulk_load_batch}" \
-      " json=#{$json}")
+  if $opts['memcachetest'] == 'y' and $json == 0 and ['couchbase', 'membase'].include?($cli_kind[0])
+    run("/opt/#{$pkg_base}/bin/memcachetest" \
+        " -h #{$target_mc}:#{$cli_kind[1]}" \
+        " -t #{$concurrency}" \
+        " -i #{$num_items}" \
+        " -m #{$val_size.to_i}" \
+        " -M #{$val_size.to_i + 1}" \
+        " -c 0")
+    used_memcachetest = true
+    clog_num_items = $num_items.to_i
+  else
+    run("./rampup-client #{$cli_kind[0]} #{$target}:#{$cli_kind[1]}" \
+        " ratio_sets=1.0 ratio_creates=1.0" \
+        " min_value_size=#{$val_size}" \
+        " max_creates=#{clog_num_items} exit_after_creates=1" \
+        " bulk_load_batch=#{bulk_load_batch}" \
+        " json=#{$json}")
+  end
 
   proc_stats_end()
 
