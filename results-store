@@ -102,7 +102,10 @@ if __name__ == '__main__':
         num_nodes     = int(n[3])
         num_vbuckets  = int(n[4])
         val_size      = int(n[5])
-        item_type     = n[6]
+
+        item_type = 'b'
+        if len(n) >= 7:
+            item_type = n[6]
 
         print(run, build,
               ram_quota, replica_count, num_items, num_nodes, num_vbuckets,
