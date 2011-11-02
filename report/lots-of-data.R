@@ -34,6 +34,7 @@ sortComparison <- function(rv) {
 
 makeFootnote <- function(footnoteText=format(Sys.time(), "%d %b %Y"),
                          size=.7, color=grey(.5)) {
+  if (length(footnoteText) > 0) {
    require(grid)
    pushViewport(viewport())
    lines <- strwrap(footnoteText, width=120)
@@ -45,6 +46,7 @@ makeFootnote <- function(footnoteText=format(Sys.time(), "%d %b %Y"),
                  just=c("right", "bottom"),
                  gp=gpar(cex=size, col=color)))
    popViewport()
+ }
 }
 
 makeOne <- function(r, filename) {
@@ -71,7 +73,7 @@ makeOne <- function(r, filename) {
             facet_wrap(~nodes, ncol=1, scales='free') +
             labs(y='Seconds', x='')
 
-          if (! is.na(d$comptime[[1]])) {
+          if (length(d$comptime[[1]]) > 0) {
             p <- p + geom_text(aes(y = time, size=2, hjust=1,
                                    label=sprintf("%.2fx", xtime)))
           }
@@ -95,8 +97,9 @@ if (length(uploadName) > 0) {
     df[df$nodes == 0,]$nodes <- 1
   }
 
-  comparisions <- c('mongodb-64-2.0.0-rc1', 'membase-1.7.1.1')
+  makeOne(df, paste(uploadName, 'pdf', sep='.'))
 
+  comparisions <- c('mongodb-64-2.0.0-rc1', 'membase-1.7.1.1')
   kinds <- getKinds()
   mclapply(comparisions,
            function(relto)
