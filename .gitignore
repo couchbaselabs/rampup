@@ -1,6 +1,7 @@
 *.out
 *.pdf
 *.rpm
+*.tar.gz
 *.tgz
 *~
 #*#
