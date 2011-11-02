@@ -103,7 +103,7 @@ if __name__ == '__main__':
         num_vbuckets  = int(n[4])
         val_size      = int(n[5])
 
-        item_type = 'b'
+        item_type = 'j'
         if len(n) >= 7:
             item_type = n[6]
 
